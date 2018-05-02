@@ -1,0 +1,135 @@
+(function () {
+    var config = {
+        allowOddsStyle: 2147483647,//全局的allowOddsStyle
+        SN: {  //球类
+            1: "soccer",
+            2: "basketball",
+            3: "football",
+            4: "baseball",
+            5: "hockey",
+            6: "tennis",
+            7: "volleyball",
+            8: "handball",
+            12: "volleyball"
+        },
+        MarketName: {//盘口类型
+            1: "全场让球",
+            2: "上半场让球",
+            3: "全场大小",
+            4: "上半场大小",
+            5: "全场赛果",
+            6: "上半场赛果",
+            //7:"全场.单双",
+            //8:"半场.单双",
+            9: "全场波胆",
+            10: "上半场波胆",
+            11: "全场总进球数",
+            12: "上半场总进球数",
+            //13:"最先进球/最后进球",
+            //14:"上半场 最先进球/最后进球",
+            //15:"全场/半场",
+            //16:"独赢",
+            //17:"主队进球",
+            //18:"客队进球",
+            //19:"净胜球",
+            //20:"主队零失球",
+            //21:"客队零失球",
+            //22:"主队零失球获胜",
+            //23:"客队零失球获胜",
+            //24:"都进球(二者均得分)",
+            //25:"双重机会（双重彩）",
+            //26: "三项让分投注",
+            //27:"",
+            //28:"",
+            //29:"",
+            //100:"优胜冠军",
+            //101:"混合过关",
+        },
+        MarketEnum: {           //盘口类型
+            F_HDP: 1,           //全场.让球
+            H_HDP: 2,           //半场.让球
+            F_OU: 3,            //全场.大小
+            H_OU: 4,            //半场.大小
+            F_1X2: 5,           //全场.1X2
+            H_1X2: 6,           //半场.1X2
+            F_OE: 7,            //全场.单双
+            H_OE: 8,            //半场.单双
+            F_CS: 9,            //全场.波胆(正确比分)
+            H_CS: 10,           //半场.波胆
+            F_TG: 11,           //全场.总进球
+            H_TG: 12,           //半场.总进球
+            F_FGLG: 13,         //最先进球/最后进球
+            H_FGLG: 14,         //上半场 最先进球/最后进球
+            FTHT: 15,           //全场/半场
+            ML: 16,             //独赢
+            Home_TG: 17,        //主队进球
+            Away_TG: 18,        //客队进球
+            WM: 19,             //净胜球
+            Home_CleanSheet: 20,//主队零失球
+            Away_CleanSheet: 21,//客队零失球
+            Home_WinNil: 22,    //主队零失球获胜
+            Away_WinNil: 23,    //客队零失球获胜
+            BothGoal: 24,       //都进球(二者均得分)
+            DC: 25,             //双重机会（双重彩）
+            TWH: 26,            //三项让分投注
+            Home_OU: 27,
+            Away_OU: 28,
+            HCS_FCS: 29,
+            OR: 100,            //优胜冠军
+            MIX: 101            //混合过关
+        },
+        BetEnum: { Narmal: 1, MixParlay: 2, OutRight: 3 },//投注类型 [普通、混合过关、优胜冠军]
+        BetListEnum: { Waiting: 0, History: 1 },//
+        RequestBetError: {
+            Success: 0,//获取成功
+            OddChange: 1,//赔率改变
+            OutLeveChanged: 2,
+            TicketError: 3,
+            LimitError: 4,
+            SystemError: 5,
+            OverLimit: 6,
+            MixParamNotFind: 7,
+            NeedLogin: 8//未登陆
+        },
+        BetResultEnum: {//投注结果
+            Done: 0,            //投注成功
+            Fail: 1,            //投注失败 [此状态显示盘口已关闭]
+            HdpChanged: 2,      //Hdp改变
+            OddsChanged: 3,     //赔率改变
+            LessMinLimit: 4,    //小于最小小额
+            OverMaxlimit: 5,    //超出信用限额
+
+            OutLevelChanged: 6, 	//ot改变
+            InsuffBalance: 7,	//余额不足
+            MixBetUnder: 8,		//mix数量不足
+            MixBetOver: 9,		//mix数量超过
+            QuotaLimit: 10,		//今日投注配额已使用完
+            NeedLogin: 11,		//未登陆
+            TooOften: 12			//投注过于平凡
+        },
+        BetStatusEnum: {        //注单状态枚举
+            All: -3,
+            BetFail: -1,
+            Waiting: 0,
+            Accepted: 1,
+            Settle: 2,
+            Cancel: 3,
+            Reject: 4
+        },
+        MixMaxBet: 10,//混合过关最大投注数
+        MpIDs: [149, 1, 4, 9, 16, 25, 43, 68, 104],
+        //刷新时间
+        RefreshTime: {
+            GuessTime: 10000,//按时间
+            GuessLeague: 10000,//按联赛
+            GuessLive: 5000,//滚球
+            GuessMix: 10000,//混合过关
+            Match: 10000,//比赛
+            LeagueLive: 10000,//即时
+            LeagueResult: 10000,//赛果
+            LeagueProcess: 10000//赛程
+        },
+        AgentKey:"qic"
+    };
+    window.$config = config;
+})(window);

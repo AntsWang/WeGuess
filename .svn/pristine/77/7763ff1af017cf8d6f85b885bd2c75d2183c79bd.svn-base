@@ -1,0 +1,142 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, maximum-scale=1,user-scalable=no" />
+    <title></title>
+    <!--<link rel="stylesheet" href="context/css/main.min.css"/>-->
+    <link rel="stylesheet" href="context/css/global.css" />
+    <link rel="stylesheet" href="context/css/ranking.css" />
+    <link rel="stylesheet" href="context/css/betlist.css" />
+    <link rel="stylesheet" href="context/css/guess.css?2" />
+    <link rel="stylesheet" href="context/css/guessheader.css" />
+    <link rel="stylesheet" href="context/css/guessleftpane.css" />
+    <link rel="stylesheet" href="context/css/guessrightpane.css?1" />
+    <link rel="stylesheet" href="context/css/guesslive.css" />
+    <link rel="stylesheet" href="context/css/guessmix.css?3" />
+    <link rel="stylesheet" href="context/css/betmessage.css" />
+    <link rel="stylesheet" href="context/css/commbetpane.css?2" />
+    <link rel="stylesheet" href="context/css/matchheader.css" />
+    <link rel="stylesheet" href="context/css/match.css" />
+    <link rel="stylesheet" href="context/css/leagues.css" />
+    <link rel="stylesheet" href="context/css/leaguesdatebar.css" />
+    <!--本html所有js css使用未压缩版本-->
+    <!--同名htm所有js css使用压缩版本-->
+
+</head>
+<body>
+    <div id="sport">
+        <transition name="slide-fade">
+            <router-view></router-view>
+        </transition>
+    </div>
+
+    <style>
+        .slide-fade-enter-active {
+            transition: all 0.3s ease;
+        }
+
+        .slide-fade-enter {
+            transform: translateX(20px);
+            opacity: 0;
+        }
+
+        .slide-fade-leave-active {
+            transform: translateX(-20px);
+            opacity: 0;
+        }
+
+        .slide-fade-leave-active {
+            transition: all 0.3s ease;
+        }
+
+        .slide-fade-leave {
+        }
+
+
+
+
+
+
+
+        .bounce-enter-active {
+            animation: bounce-in .3s;
+        }
+
+        .bounce-leave-active {
+            animation: bounce-out .3s;
+        }
+
+        @keyframes bounce-in {
+            0% {
+                transform: scale(0);
+            }
+
+            50% {
+                transform: scale(0.5);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes bounce-out {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(0.5);
+            }
+
+            100% {
+                transform: scale(0);
+            }
+        }
+    </style>
+
+    <script>
+        function say(msg) {
+            alert(msg + ",from top window");
+        }
+    </script>
+    <script src="context/lib/vue.js"></script>
+    <script src="context/lib/vue-router.js"></script>
+    <script src="context/lib/vue-resource.min.js"></script>
+
+    <!--<script src="context/scripts.min.js"></script>
+    <script src="context/component.min.js"></script>-->
+    <script src="context/scripts/tool.js"></script>
+    <script src="context/scripts/config.js"></script>
+    <script src="context/scripts/language.js"></script>
+    <script src="context/scripts/api.js"></script>
+    <script src="context/scripts/handle.js"></script>
+    <script src="context/scripts/Token.js"></script>
+    <script src="context/component/comm/loading.js"></script>
+    <script src="context/component/comm/betfail.js"></script>
+    <script src="context/component/comm/betsuccess.js"></script>
+    <script src="context/component/comm/betpane.js"></script>
+    <script src="context/component/comm/sportbox.js"></script>
+    <script src="context/component/ranking/ranking.js"></script>
+    <script src="context/component/betlist/betlist.js"></script>
+    <script src="context/component/guess/header.js"></script>
+    <script src="context/component/guess/timeitem.js"></script>
+    <script src="context/component/guess/leagueitem.js"></script>
+    <script src="context/component/guess/matchitem.js"></script>
+    <script src="context/component/guess/live.js"></script>
+    <script src="context/component/guess/mix.js"></script>
+    <script src="context/component/leagues/calendar.js"></script>
+    <script src="context/component/leagues/datebar.js"></script>
+    <script src="context/component/leagues/leaguelive.js"></script>
+    <script src="context/component/leagues/leagueresult.js"></script>
+    <script src="context/component/leagues/leagueprocess.js"></script>
+    <script src="context/component/match/matchheader.js"></script>
+    <script src="context/component/match/match.js"></script>
+    <script src="context/component/guess/guess.js"></script>
+    <script src="context/component/leagues/leagues.js"></script>
+
+    <script src="context/index.js"></script>
+
+</body>
+</html>

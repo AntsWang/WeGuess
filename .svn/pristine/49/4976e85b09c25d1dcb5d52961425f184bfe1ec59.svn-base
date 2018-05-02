@@ -1,0 +1,102 @@
+.live {
+}
+
+    .live .item {
+        float: left;
+        width: 100%;
+        height: 9.4em;
+    }
+
+    .live .title {
+        border: solid 1px #cccccc;
+        border-top-color: #efeded;
+        background-color: #f7f7f7;
+        border-left: none;
+        border-right: none;
+    }
+
+        .live .title span {
+            display: block;
+            line-height: 2.9em;
+            float: left;
+        }
+
+    .live .pane .block {
+        text-indent: 4px;
+    }
+
+    .live .title .type {
+        text-align: center;
+    }
+
+    .live .pane .block, .live .pane .info {
+        display: block;
+    }
+
+    .live .pane .info, .live .pane .odds {
+        float: left;
+        border-right: solid 1px #cccccc;
+    }
+
+        .live .pane .info, .live .pane .odds:last-child {
+            float: left;
+            border-right: none;
+        }
+
+    .live .pane .info, .live .title span:first-child {
+        width: 47%;
+    }
+
+    .live .pane .odds, .live .title .type {
+        width: 26%;
+    }
+
+    .live .pane .info:first-child {
+        padding-top: 4px;
+    }
+
+    .live .pane .info span {
+        line-height: 1.5em;
+    }
+
+    .live .pane .card {
+        background-color: #d80204;
+        color: #fff;
+        margin-left: 3px;
+    }
+
+    .live .pane .guesserCount {
+        float: right;
+        margin-right: 1em;
+    }
+
+    .live .pane .score {
+        color: #30a00d;
+        display: block;
+        float: right;
+        margin-right: 1em;
+        font-size: 1.2em;
+        font-weight: 500;
+    }
+
+    .live .pane .odds a {
+        line-height: 3em;
+        height: 3em;
+    }
+
+        .live .pane .odds a:first-child {
+            border-bottom: solid 1px #cccccc;
+        }
+
+    .live .pane .hdp {
+        width: 50%;
+        display: block;
+        float: left;
+        text-align: center;
+    }
+
+    .live .pane .odd {
+        display: block;
+        float: right;
+        max-width: 50%;
+    }

@@ -1,0 +1,107 @@
+/*
+ * 定义一个CacheMangement 缓存对象
+ * var CacheMganage = new CacheManagement();
+ * Token的缓存对象Key默认为 "Token",Set :设置token的值
+ * CacheMganage.Set("Token", "sdfsdgs5418s41gf5sd4fsd541fs");
+ * Token的缓存对象Key默认为 "Token",Get :获取token的值 
+ * 第一个参数为key,第二个参数为未找到该值时,默认返回结果
+ * var data = CacheMa.Get("Token", []);
+ */
+(function(w) {
+	w.setCookie = function(name, value, days) {
+		var day = 30;
+		if(typeof days === "number" && days > 0) {
+			day = days;
+		}
+		var exp = new Date();
+		exp.setTime(exp.getTime() + day * 24 * 60 * 60 * 1000);
+		document.cookie = name + "=" + escape(value) + ";expires=" + exp.toGMTString();
+	}
+	w.getCookie = function(name) {
+		var arr, reg = new RegExp("(^| )" + name + "=([^;]*)(;|$)");
+		if(arr = document.cookie.match(reg))
+			return unescape(arr[2]);
+		else
+			return null;
+
+	}
+	w.delCookie = function(name) {
+		var exp = new Date();
+		exp.setTime(exp.getTime() - 1);
+		var cval = getCookie(name);
+		if(cval != null)
+			document.cookie = name + "=" + cval + ";expires=" + exp.toGMTString();
+
+	}
+})(window);
+
+(function(w) {
+	var cacheFun = function() {
+		this.SaveType = 0;
+		if(w.localStorage) {
+			this.SaveType = 1;
+			return true;
+		}
+		if(document.cookie || navigator.cookieEnabled) {
+			this.SaveType = 2;
+			return true;
+		}
+		if(w.sessionStorage) {
+			this.SaveType = 3;
+			return true;
+		}
+		this.SaveType = 4;
+		return false;
+	};
+
+	function GetUrlParams(name) {
+		var r = new RegExp("(\\?|#|&)" + name + "=([^&#]*)(&|#|$)");
+		var m = location.href.match(r);
+		return decodeURIComponent(!m ? "" : m[2]);
+	}
+	cacheFun.prototype = {
+		Set: function(key, value) {
+			if(typeof value === "object") {
+				value = JSON.stringify(value);
+			}
+			if(this.SaveType === 1) {
+				w.localStorage[key] = value;
+			} else if(this.SaveType === 2) {
+				w.setCookie(key, value);
+			} else if(this.SaveType === 3) {
+				w.sessionStorage.setItem(key, value);
+			}
+		},
+		Get: function(key, defaultParam, type) {
+			var value = defaultParam;
+			if(this.SaveType === 1) {
+				value = w.localStorage[key] || defaultParam;
+			} else if(this.SaveType === 2) {
+				value = w.getCookie(key, value) || defaultParam;
+			} else if(this.SaveType === 3) {
+				value = w.sessionStorage.getItem(key, value) || defaultParam;
+			} else {
+				value = GetUrlParams(key) || defaultParam;
+			}
+			try {
+				if(type && typeof value === "string") {
+					value = JSON.parse(value);
+				}
+			} catch(e) {
+				return value;
+			}
+
+			return value;
+		},
+		Delete: function(key) {
+			if(this.SaveType === 1) {
+				w.localStorage[key] = "";
+			} else if(this.SaveType === 2) {
+				w.delCookie(key, token);
+			} else if(this.SaveType === 3) {
+				w.sessionStorage.setItem(key, "");
+			}
+		}
+	}
+	w.CacheManagement = cacheFun;
+})(window);

@@ -1,0 +1,164 @@
+(function (w, fun) {
+    if (typeof (fun) == "function") {
+        w.Tools = fun(w);
+    }
+})(window, function (w) {
+    var tools = {
+        //计算HDP
+        Fmoney: function (n) {
+            n = (n > 0 && n <= 20) ? n : 2;
+            var s = parseFloat(this.replace(/[^\d\.-]/g, "")).toFixed(n) + "";
+            var l = s.split(".")[0].split("").reverse(),
+				r = s.split(".")[1],
+				t = "",
+				len = l.length;
+            for (var i = 0; i < len; i++) {
+                t += l[i] + ((i + 1) % 3 == 0 && (i + 1) != len ? "," : "");
+            }
+            return t.split("").reverse().join("") + "." + r;
+        },
+        ContactJson: function (json1, json2) {
+            for (var key in json2) {
+                if (!json1.hasOwnProperty(key)) {
+                    json1[key] = json2[key];
+                }
+            }
+            return json1;
+        },
+        //获取日期列表，initdate初始时间，num初试时间后的天数
+        GetDateList: function (initdate, num) {
+            var datelist = new Array();
+            for (var i = 0; i < num; i++) {
+                var date = new Date(initdate.getTime() + i * 1000 * 24 * 60 * 60);
+                var item = {
+                    "date": date.format("YY-MM-dd"),
+                    "day": w.Language.DayList[date.getDay()]
+                }
+                datelist.push(item);
+            }
+            return datelist;
+        },
+        //判断json数组是否含某个值
+        ArrayContain: function (arr, item, key) {
+            if (arr instanceof Array) {
+                for (var i = 0; i < arr.length; i++) {
+                    if (arr[i][key] == item) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+    }
+    return tools;
+});
+String.prototype.fmoney = function (n) {
+    n = (n > 0 && n <= 20) ? n : 2;
+    var s = parseFloat(this.replace(/[^\d\.-]/g, "")).toFixed(n) + "";
+    var l = s.split(".")[0].split("").reverse(),
+		r = s.split(".")[1],
+		t = "",
+		len = l.length;
+    for (var i = 0; i < len; i++) {
+        t += l[i] + ((i + 1) % 3 == 0 && (i + 1) != len ? "," : "");
+    }
+    //return t.split("").reverse().join("") + "." + r;//保留小数
+    return t.split("").reverse().join("");
+};
+String.prototype.format = function (args) {
+    if (arguments.length > 0) {
+        var result = this,
+			reg, length = arguments.length;
+        if (length === 1 && typeof (args) == "object") {
+            for (var key in args) {
+                reg = new RegExp("({" + key + "})", "g");
+                result = result.replace(reg, args[key]);
+            }
+        } else {
+            for (var i = 0; i < length; i++) {
+                reg = new RegExp("({[" + i + "]})", "g");
+                result = result.replace(reg, arguments[i]);
+            }
+        }
+        return result;
+    }
+    return this;
+};
+Date.prototype.format = function (fmt) {
+    var o = {
+        "Y+": this.getFullYear(),
+        "M+": this.getMonth() + 1, //月份   
+        "d+": this.getDate(), //日   
+        "h+": this.getHours() % 12 === 0 ? 12 : this.getHours() % 12, //12小时制
+        "H+": this.getHours(),
+        "m+": this.getMinutes(), //分   
+        "s+": this.getSeconds(), //秒   
+        "q+": Math.floor((this.getMonth() + 3) / 3), //季度   
+        "S": this.getMilliseconds(), //毫秒
+        "P": this.getHours() <= 12 ? "AM" : "PM"
+    };
+    if (/(y+)/.test(fmt)) fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+    for (var k in o)
+        if (new RegExp("(" + k + ")").test(fmt)) {
+            if (k == "Y+") {
+                fmt = fmt.replace(RegExp.$1, o[k]);
+            } else {
+                fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+            }
+
+        }
+    return fmt;
+};
+
+
+(function (w) {
+    var passFn = {};
+    var curInput = "";
+    var defaultTimeOut = 5000;//5s
+    var maxBuffer = 500;
+    setInterval(function () {
+        curInput = "";
+    }, defaultTimeOut);
+
+    w.KP = {
+        bind: function (pass, fn) {
+            if (pass && fn) {
+                passFn[pass.toLowerCase()] = fn;
+            }
+        }
+    }
+    w.document.onkeydown = function (e) {
+        var key = e.key.toLowerCase();
+        curInput += key;
+        // console.log("press " + key + " ," + e.code);
+        for (var k in passFn) {
+            if (passFn.hasOwnProperty(k)) {
+                var fn = passFn[k];
+                if (curInput.indexOf(k) > -1) {
+                    try {
+                        curInput = "";
+                        fn(k);
+                    } catch (e) {
+                        console.error(e);
+                    }
+                } else {
+                    if (curInput.length >= maxBuffer) {
+                        curInput = "";
+                    }
+                }
+            }
+        }
+    };
+})(window);
+window.KP.bind("hh", function (pass) {
+    document.location = "/#/guess/time/1";
+});
+window.KP.bind("jj", function (pass) {
+    document.location = "/#/leagues/result/1/2017-04-24";
+});
+window.KP.bind("kk", function (pass) {
+    document.location = "/#/betlist";
+});
+window.KP.bind("ll", function (pass) {
+    document.location = "/#/ranking";
+});

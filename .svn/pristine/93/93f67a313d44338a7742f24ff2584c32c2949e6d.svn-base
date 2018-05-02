@@ -1,0 +1,65 @@
+.matchheader {
+    position: fixed;
+    width: 100%;
+    height: 109px;
+    top: 0px;
+    background-color: #333333;
+    background-image: url(../image/placebg.png);
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+    .matchheader div {
+        height: 24px;
+        line-height: 24px;
+        font-size: 16px;
+    }
+
+    .matchheader .league, .matchheader .time {
+        font-size: 14px;
+    }
+
+    .matchheader .header, .matchheader .score {
+        text-align: center;
+    }
+
+        .matchheader .header .rule {
+            position: absolute;
+            background-color: #3a66b3;
+            /* border: solid 1px #fff; */
+            line-height: 26px;
+            right: 12px;
+            width: 20%;
+            top: 24px;
+            border-radius: 0.6em;
+            font-size: 14px;
+            height: 24px;
+        }
+
+    .matchheader div:first-child {
+        padding-top: 24px;
+    }
+
+    .matchheader .homename {
+        width: 37%;
+        text-align: right;
+    }
+
+    .matchheader .score {
+        width: 20%;
+        margin: 0 3%;
+        background-color: rgba(0,0,0,0.5);
+        border-radius: 0.6em;
+        color: #2cbf16;
+        box-shadow: 0px 0px 1px 1px #ffffff;
+    }
+
+    .matchheader .awayname {
+        width: 37%;
+    }
+
+    .matchheader .vs {
+        width: 20%;
+        margin: 0 3%;
+        text-align: center;
+    }

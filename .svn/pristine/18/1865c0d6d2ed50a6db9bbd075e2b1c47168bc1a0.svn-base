@@ -1,0 +1,55 @@
+/*
+ * 排行榜
+ */
+(function(w, fun) {
+	if(w.component == null) {
+		w.component = {};
+	}
+	w.component['ranking'] = fun(w);
+})(window, function(w) {
+	var rankinghtml = '<div class="ranking">\
+				<div class="title"><span class="rank floatleft">排名</span><span class="headname floatleft"></span><span class="nickname floatleft">昵称</span><span class="winodd floatright">胜率</span></div>\
+				<div>\
+				<div class="blue rankpane" v-if="userInfo"><span class="rank floatleft">{{userInfo.rank}}</span><img  class="headimg floatleft" :src="userInfo.headimg"><span class="nickname floatleft">{{userInfo.account}}</span><span  class="winodd floatright">{{userInfo.win}}</span></div>\
+				<div class="rankpane"  v-for="(item,index) in RankList" :class="{\'odditem\':(index%2!=0),\'evenitem\':(index%2==0)}">\
+					<span  class="rank floatleft">{{item.rank}}</span><img  class="headimg floatleft" :src="\'http://sta.36krcnd.com/common-module/common-header/images/logo.png\'"><span  class="nickname floatleft" >{{item.account}}</span><span  class="winodd floatright  yellow">{{item.win}}</span>\
+				</div>\
+				</div>\
+	 </div>'
+	var ranking = Vue.extend({
+		template: rankinghtml,
+		//props:["userId"],
+		data: function() {
+			return {
+				userId: 1,
+				userInfo:{},//当前用户信息
+				ranklists: [{ memId: 2, account: "西班牙大火腿", rank: 12, headimg: "context/image/placebg.png", win: "胜率" }, { memId: 1, account: "飞天", rank: 12, headimg: "context/image/blance.png", win: "胜率" }, { memId: 2, account: "飞天", rank: 12, headimg: "context/image/blance.png", win: "胜率" }, { memId: 2, account: "飞天", rank: 12, headimg: "context/image/blance.png", win: "胜率" }
+				,{ memId: 2, account: "飞天", rank: 12,  win: "胜率" },{ memId: 2, account: "飞天", rank: 12, headimg: "context/image/blance.png", win: "胜率" },{ memId: 2, account: "飞天", rank: 12, headimg: "context/image/blance.png", win: "胜率" },{ memId: 2, account: "飞天", rank: 12, headimg: "context/image/blance.png", win: "胜率" },{ memId: 2, account: "飞天", rank: 12, headimg: "context/image/blance.png", win: "胜率" }]
+			}
+		},
+		created:function(){
+			if(this.ranklists) {
+					for(var i = 0; i < this.ranklists.length; i++) {
+						if(this.userId == this.ranklists[i].memId) {
+							this.userInfo=this.ranklists[i];
+							return;
+						}
+					}
+				}
+		},
+		computed: {
+			
+			RankList: function() {
+				var li = this;
+				li.ranklists.forEach(function(item, index) {
+					if(li.userId == item.memId) {
+						li.ranklists.splice(index, 1);
+					}
+				})
+				return li.ranklists;
+			}
+		},
+		methods: {}
+	})
+	return ranking;
+});

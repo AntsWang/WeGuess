@@ -1,0 +1,59 @@
+.ranking {
+	line-height: 3em;
+	background-color: #f7f7f7;
+	width: 100%;
+	height: 100%;
+}
+
+.ranking .title {
+	font-size: 1.2em;
+	overflow: hidden;
+	border-bottom: solid 1px #CCCCCC;
+	background: #fff;
+}
+
+
+.ranking .rank {
+	width: 20%;
+	text-align: center;
+}
+
+.ranking .headimg {
+	height: 2em;
+	width: 2em;
+	border-radius: 50%;
+	display: block;
+	margin-top: 0.5em;
+	margin-right: 0.5em;
+	
+}
+.ranking .headname {
+	height: 2em;
+	width: 1em;
+	display: block;
+}
+
+
+.ranking .nickname {
+	width: calc(57% - 2.5em);
+	width: -webkit-calc(57% - 2.5em);
+	width: -moz-calc(57% - 2.5em);
+}
+
+.ranking .winodd {
+	width: 23%;
+	text-align: center;
+}
+
+.ranking .odditem {
+	background-color: #f7f7f7;
+}
+
+.ranking .evenitem {
+	background-color: #ffffff;
+}
+
+.ranking .rankpane {
+	overflow: hidden;
+	border-bottom: solid 1px #e0e0e0;
+}

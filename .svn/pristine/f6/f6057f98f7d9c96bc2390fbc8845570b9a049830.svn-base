@@ -1,0 +1,75 @@
+/*
+ * 竞猜头部
+ * 传入参数格式balance:10000,sportList=[{sportName:"足球",sportId:1}]
+ */
+(function(w,fun) {
+	if(w.component == null) {
+		w.component = {};
+	}
+	w.component['guessheader'] = fun(w);
+})(window,function(w){
+	var headerhtml = '<div class="header guessheader" id="header">\
+			<div class="uerinfo">\
+				<i class="floatleft block wgicon icon_balance"></i><span class="yellow">{{Fmoney(balance)}}</span>\
+				<a class="floatright  wgicon icon_statement" @click="ShowStatement()"></a>\
+				<a class="floatright  wgicon icon_ranking" @click="ShowRanking()"></a>\
+			</div>\
+			<div class=\"typebtn\">\
+				<sportbox ref="box" :sportId=sportId class="sportbox fourDiv floatleft" @ChangeSport=ChangeSport></sportbox>\
+				<a  :class="{\'noselect\':(type!=\'time\'),\'select\':(type==\'time\')}"  v-on:click=\'ChangeHeaderBtn("time")\'>按日期</a>\
+				<a  :class="{\'noselect\':(type!=\'league\'),\'select\':(type==\'league\')}"   v-on:click=\'ChangeHeaderBtn("league")\'>按比赛</a>\
+				<a  :class="{\'noselect\':(type!=\'live\'),\'select\':(type==\'live\')}"  v-on:click=\'ChangeHeaderBtn("live")\'>滚球</a>\
+				<a  :class="{\'noselect\':(type!=\'mix\'),\'select\':(type==\'mix\')}"  v-on:click=\'ChangeHeaderBtn("mix")\'>串关</a>\
+			</div>\
+			</div>'
+	var header = Vue.extend({
+		template: headerhtml,
+		name:"header",
+		props:["type","sportId","balance","sportList"],
+		data:function() {
+			return {
+				btnlist:{
+					time:true,//按时间
+					league:false,//按联赛
+					live:false,//滚球
+					mix:false//串关
+				}
+			}
+		},
+		components:{
+			sportbox: w.component.sportbox
+		},
+		methods: {
+			//变更体育种类
+			ChangeSport:function(sportId){
+				this.$emit("ChangeSport",sportId);
+			},
+			//变更显示类型
+			ChangeHeaderBtn: function(type) {
+				if(this.type==type)return;
+				//this.type=type;
+				/*for(var i in this.btnlist){
+					if(i==type){
+						this.btnlist[type]=true;
+					}else{
+						this.btnlist[i]=false;
+					}
+				}*/
+				this.$emit("ChangeType",type);
+			},
+			//显示投注记录
+			ShowStatement:function(){
+				this.$emit("ShowStatement");
+			},
+			//显示排行榜
+			ShowRanking:function(){
+				this.$emit("ShowRanking");
+			},
+			//格式化猜豆数据
+			Fmoney: function(n) {
+				return n.toString().fmoney();
+			}
+		}
+	});
+	return header;
+});

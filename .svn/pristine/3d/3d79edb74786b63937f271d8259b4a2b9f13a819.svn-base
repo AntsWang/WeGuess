@@ -1,0 +1,45 @@
+(function (w, fun) {
+    if (w.component == null) {
+        w.component = {};
+    }
+    w.component['toast'] = fun(w);
+})(window, function (w) {
+    var html = '<div class="toastcont"><div @click=CloseToast class="toast" v-show=show><p>{{msg}}</p></div></div>';
+    var toast = Vue.extend({
+        template: html,
+        props: ["time"],
+        data: function () {
+            return {
+                show: false,
+                msg: "",
+                defaultTime: this.time || 2000
+            };
+        },
+        created: function () {
+            //用于显示toast信息 在需要的页面引用toast组件 并使用vbus触发ShowToast事件即可使用
+            w.vbus.$on("ShowToast", this.ShowToast);
+        },
+        methods: {
+            CloseToast: function () {
+                this.show = false;
+            },
+            ShowToast: function (msg, time, force) {
+                var that = this;
+                //正在显示 等待1s
+                if (this.show && !force) {
+                    setTimeout(function () {
+                        that.ShowToast(msg, time, true);
+                    }, 1000);
+                    return;
+                }
+                //直接显示
+                this.msg = msg;
+                this.show = true;
+                setTimeout(function () {
+                    that.show = false;
+                }, time || this.defaultTime);
+            }
+        }
+    });
+    return toast;
+});

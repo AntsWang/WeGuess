@@ -1,0 +1,30 @@
+.match{
+	margin-top: 109px;
+	overflow: scroll;
+}
+.match .oddtitle span{
+	font-size: 12px;
+}
+.match .oddtitle span:first-child{
+	color: #000000;
+}
+.match .odditem{
+	border: solid 1px #CCCCCC;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+}
+.match .odditem a:last-child span{
+    border-right-width: 0px;
+}
+.match .fourBall{
+	display: block;
+    max-width: 60%;
+    text-indent: 0.5em;
+    /*float: left;*/
+}
+.notice{
+	height: 2.8em;
+	line-height: 2.8em;
+	font-size: 1.2em;
+}

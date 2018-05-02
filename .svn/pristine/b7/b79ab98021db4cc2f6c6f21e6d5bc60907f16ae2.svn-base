@@ -1,0 +1,294 @@
+/*
+ * cookie读写删除
+ */
+(function (w) {
+    w.setCookie = function (name, value, days) {
+        var day = 30;
+        if (typeof days === "number" && days > 0) {
+            day = days;
+        }
+        var exp = new Date();
+        exp.setTime(exp.getTime() + day * 24 * 60 * 60 * 1000);
+        document.cookie = name + "=" + escape(value) + ";expires=" + exp.toGMTString();
+    }
+    w.getCookie = function (name) {
+        var arr, reg = new RegExp("(^| )" + name + "=([^;]*)(;|$)");
+        if (arr = document.cookie.match(reg))
+            return unescape(arr[2]);
+        else
+            return null;
+
+    }
+    w.delCookie = function (name) {
+        var exp = new Date();
+        exp.setTime(exp.getTime() - 1);
+        var cval = getCookie(name);
+        if (cval != null)
+            document.cookie = name + "=" + cval + ";expires=" + exp.toGMTString();
+
+    }
+})(window);
+
+/*
+ * 本地缓存的
+ */
+(function (w) {
+    var cacheFun = function () {
+        this.SaveType = 0;
+        if (w.localStorage) {
+            this.SaveType = 1;
+            return true;
+        }
+        if (document.cookie || navigator.cookieEnabled) {
+            this.SaveType = 2;
+            return true;
+        }
+        if (w.sessionStorage) {
+            this.SaveType = 3;
+            return true;
+        }
+        return false;
+    };
+    cacheFun.prototype = {
+        Set: function (key, value) {
+            if (typeof value === "object") {
+                value = JSON.stringify(value);
+            }
+            if (this.SaveType === 1) {
+                w.localStorage[key] = value;
+            } else if (this.SaveType === 2) {
+                w.setCookie(key, value);
+            } else if (this.SaveType === 3) {
+                w.sessionStorage.setItem(key, value);
+            }
+        },
+        Get: function (key, defaultParam, type) {
+            var value = defaultParam;
+            if (this.SaveType === 1) {
+                value = w.localStorage[key] || defaultParam;
+            } else if (this.SaveType === 2) {
+                value = w.getCookie(key, value) || defaultParam;
+            } else if (this.SaveType === 3) {
+                value = w.sessionStorage.getItem(key, value) || defaultParam;
+            }
+            try {
+                if (value == "") {
+                    return value;
+                }
+                if (type && typeof value === "string") {
+                    value = JSON.parse(value);
+                }
+            } catch (e) {
+                return value;
+            }
+
+            return value;
+        },
+        Delete: function (key) {
+            if (this.SaveType === 1) {
+                w.localStorage[key] = "";
+            } else if (this.SaveType === 2) {
+                w.delCookie(key, token);
+            } else if (this.SaveType === 3) {
+                w.sessionStorage.setItem(key, "");
+            }
+        }
+    }
+    w.$CacheMg = new cacheFun();
+})(window);
+
+/*
+ * Token封装
+ */
+(function (w) {
+    /* 封装ajax函数
+	 * @param {string}opt.type http连接的方式，包括POST和GET两种方式
+	 * @param {string}opt.url 发送请求的url
+	 * @param {boolean}opt.async 是否为异步请求，true为异步的，false为同步的
+	 * @param {object}opt.data 发送的参数，格式为对象类型
+	 * @param {function}opt.success ajax发送并接收成功调用的回调函数
+	 */
+    function ajax(opt) {
+        opt = opt || {};
+        opt.method = opt.method.toUpperCase() || 'POST';
+        opt.url = opt.url || '';
+        opt.async = opt.async === undefined ? true : opt.async;
+        opt.data = opt.data || null;
+        opt.success = opt.success || function () { };
+        opt.header = opt.header || {};
+        var xmlHttp = null;
+        if (XMLHttpRequest) {
+            xmlHttp = new XMLHttpRequest();
+        } else {
+            xmlHttp = new ActiveXObject('Microsoft.XMLHTTP');
+        }
+        var params = [];
+        for (var key in opt.data) {
+            params.push(key + '=' + opt.data[key]);
+        }
+        var postData = params.join('&');
+        if (opt.method.toUpperCase() === 'POST') {
+            xmlHttp.open(opt.method, opt.url, opt.async);
+            xmlHttp.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded;charset=utf-8');
+            xmlHttp.setRequestHeader('Access-Control-Allow-Origin', '*');
+            for (var item in opt.header) {
+                if (opt.header.hasOwnProperty(item)) {
+                    xmlHttp.setRequestHeader(item, opt.header[item]);
+                };
+            }
+            xmlHttp.send(postData);
+        } else if (opt.method.toUpperCase() === 'GET') {
+            xmlHttp.open(opt.method, opt.url + '?' + postData, opt.async);
+            for (var item in opt.header) {
+                if (opt.header.hasOwnProperty(item)) {
+                    xmlHttp.setRequestHeader(item, opt.header[item]);
+                };
+            }
+            xmlHttp.send(null);
+        }
+
+        xmlHttp.onreadystatechange = function () {
+            if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+                var response = "";
+                try {
+                    response = JSON.parse(xmlHttp.responseText);
+                } catch (e) {
+                    response = xmlHttp.responseText;
+                }
+                opt.success(response);
+            }
+        };
+        if (!opt.async) {
+            var response = "";
+            try {
+                response = JSON.parse(xmlHttp.responseText);
+            } catch (e) {
+                response = xmlHttp.responseText;
+            }
+            opt.success(response);
+            return response;
+        }
+    }
+    var token = function (getTokenUrl, QIC, $httpProvider) {
+        this.Tourist = Number($CacheMg.Get("Tourist", "1")) === 1 ? true : false;
+        this.IsLogin = !this.Tourist;
+        this.RefreshTime = 30000;
+        this.LastRefreshTime = Number($CacheMg.Get("LastRefreshTime", "0"));
+        this.GetTokenUrl = getTokenUrl;
+        this.QIC = QIC || "QIC";
+        this.$httpProvider = $httpProvider;
+        this.Token = $CacheMg.Get("Token", "");
+        if (this.$httpProvider) {
+            this.$httpProvider.defaults.headers.common['Authorization'] = this.Token;
+        }
+        this.Get();
+    };
+
+    var interval = null;
+    token.prototype = {
+        Get: function () {
+            var that = this;
+            var response = ajax({
+                method: 'Get',
+                url: that.GetTokenUrl,
+                data: {},
+                async: false,
+                header: {
+                    Authorization: that.Token,
+                    QIC: that.QIC
+                }
+            });
+            if (response.Result === 1) {
+                that.LastRefreshTime = new Date().getTime();
+                that.RefreshTime = response.Data.RefreshTime
+                that.Tourist = response.Data.Tourist;
+                that.IsLogin = !response.Data.Tourist;
+                that.Token = response.Data.Token
+                $CacheMg.Set("Token", that.Token);
+                console.log("new Token " + that.Token);
+                $CacheMg.Set("Tourist", that.Tourist ? 1 : 0);
+                $CacheMg.Set("RefreshTime", that.RefreshTime);
+                $CacheMg.Set("LastRefreshTime", that.LastRefreshTime);
+
+                if ($httpProvider) {
+                    $httpProvider.defaults.headers.common['Authorization'] = response.Data.Token;
+                }
+                if (!interval) {
+                    console.log("Refresh Token Start");
+                    that.Refresh();
+                }
+            }
+        },
+        //授权登录，账号登录，注册时，将返回token信息写入
+        Set: function (token, refreshTime, tourist) {
+            this.LastRefreshTime = token ? new Date().getTime() : Number($CacheMg.Get("LastRefreshTime", new Date().getTime() + ""));
+
+            if (token && token != "") {
+                $CacheMg.Set("LastRefreshTime", this.LastRefreshTime);
+                $CacheMg.Set("Token", token);
+            }
+            this.Token = token || $CacheMg.Get("Token", "");
+
+            if (refreshTime) {
+                $CacheMg.Set("RefreshTime", refreshTime);
+            }
+            this.RefreshTime = refreshTime || Number($CacheMg.Get("RefreshTime", 30000));
+            if (tourist !== undefined) {
+                $CacheMg.Set("Tourist", tourist ? 1 : 0);
+                this.Tourist = tourist;
+            } else {
+                this.Tourist = Number($CacheMg.Get("Tourist", "1")) === 1 ? true : false;
+            }
+            this.IsLogin = !this.Tourist;
+            if (this.$httpProvider) {
+                this.$httpProvider.defaults.headers.common['Authorization'] = this.Token;
+            }
+        },
+        //刷新token
+        Refresh: function () {
+            if (!this.GetTokenUrl) {
+                console.log("RefreshUrl is null");
+                return;
+            }
+            var that = this;
+            refreshToken();
+            interval = setInterval(refreshToken, 10000);
+
+            function refreshToken() {
+                var timestamp = new Date().getTime();
+                if ((timestamp - that.LastRefreshTime) > that.RefreshTime) {
+                    that.LastRefreshTime = timestamp;
+                    ajax({
+                        method: 'Get',
+                        url: that.RefreshUrl,
+                        data: {},
+                        header: {
+                            Authorization: that.Token,
+                            QIC: that.QIC
+                        },
+                        success: function (response) {
+                            if (response.Result === 1 && response.Data) {
+                                that.LastRefreshTime = new Date().getTime();
+                                that.RefreshTime = response.Data.RefreshTime
+                                that.Tourist = response.Data.Tourist;
+                                that.IsLogin = !response.Data.Tourist;
+                                that.Token = response.Data.Token
+                                $CacheMg.Set("Token", that.Token);
+                                console.log("new Token " + that.Token);
+                                $CacheMg.Set("Tourist", that.Tourist ? 1 : 0);
+                                $CacheMg.Set("RefreshTime", that.RefreshTime);
+                                $CacheMg.Set("LastRefreshTime", that.LastRefreshTime);
+
+                                if ($httpProvider) {
+                                    $httpProvider.defaults.headers.common['Authorization'] = response.Data.Token;
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        }
+    }
+
+    w.$TokenManagement = token;
+})(window);

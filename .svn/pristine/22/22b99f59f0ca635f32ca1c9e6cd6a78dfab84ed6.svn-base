@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, maximum-scale=1,user-scalable=no" />
+    <title></title>
+    <link rel="stylesheet" href="context/css/main.min.css?_=1494928145414" />
+</head>
+<body>
+    <div id="sport">
+        <router-view></router-view>
+    </div>
+    <div id="global_component"></div>
+
+    <script src="context/lib/libs.min.js?_=1494928145414"></script>
+    <script src="context/scripts.min.js?_=1494928145414"></script>
+    <script src="context/component.min.js?_=1494928145414"></script>
+    <script src="context/index.js?_=1494928145414"></script>
+    <script>
+        console.log("当前版本1494928145414");
+    </script>
+</body>
+</html>

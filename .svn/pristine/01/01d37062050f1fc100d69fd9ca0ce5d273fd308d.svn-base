@@ -1,0 +1,326 @@
+(function (w, fun) {
+    if (w.component == null) {
+        w.component = {};
+    }
+    w.component['guessPage'] = fun(w);
+})(window, function (w) {
+    var guesshtml = '<div>\
+			<guessheader :type=type :sportId=sportId :balance="balance" ref="bar"  @ChangeType=ChangeType @ChangeSport=ChangeSport @ShowStatement=ShowStatement @ShowRanking=ShowRanking></guessheader>\
+    <transition name="slide-fade0">\
+			<div v-if="(type==\'time\') || (type==\'league\') " class="guesspane">\
+					<div class="rightpane" >\
+						<matchitem :matchlist=matchlist :type=type @SelectMatch=SelectMatch> </matchitem>\
+					</div>\
+					<div class="leftpane"><transition name="slide-fade0">\
+						<timeitem :type=type :sportId=sportId v-if="(type==\'time\') "   @ChangeTime=ChangeTime></timeitem>\
+						<leagueitem :type=type :sportId=sportId  v-if="(type==\'league\') "   @ChangeLeague=ChangeLeague></timeitem>\
+					</transition></div>\
+			</div>\
+				<live :type=type v-if="(type==\'live\')" :sportId=sportId :isShowBet=isShowBet :selectBetitem=selectBetitem @InitBet=InitBet @SelectMatch=SelectMatch  ></live>\
+				<mix :type=type v-if="(type==\'mix\')" ref="mix" :sportId=sportId :isShowBet=isShowBet :selectBetitem=selectBetitem @InitBet=InitBet  ></mix>\
+    </transition">\
+				<betpane v-if="isShowBet" :isMix=isMix :betinfo=betinfo  @CloseBetPane=CloseBetPane @SubmitBet=SubmitBet></betpane>\
+				<betfail :type=isBetSuccess :betErrormsg=betErrormsg v-show="isBetSuccess==2 || isBetSuccess==3" @CloseMessage=CloseMessage @ReSubmitBet=ReSubmitBet @CancelBet=CancelBet></betfail>\
+				<betsuccess :betResult=betResult  v-if="isBetSuccess==1" @CloseMessage=CloseMessage></betsuccess>\
+				<loading v-show="isLoading" :message=loadingText></loading></div>';
+    var guess = Vue.extend({
+        template: guesshtml,
+        name: "guess",
+        data: function () {
+            var gsportid = 1;
+            var gtype = "time";
+            if (this.$route.params.sportId) {
+                gsportid = this.$route.params.sportId;
+            }
+            if (this.$route.params.type) {
+                gtype = this.$route.params.type;
+            }
+            return {
+                currentmatchs: {},
+                currentgames: {},
+                sportId: gsportid,
+                type: gtype, //按日期,按联赛,滚球，串关
+                matchlist: [], //选中联赛
+                balance: 1000, //账户余豆
+                isLoading: false, //是否显示加载动画
+                loadingText: "", //加载显示文字
+
+                selectBetitem: "",//投注选中
+
+                betinfo: {}, //获取投注前数据
+                isShowBet: false, //是否显示投注界面
+                isMix: false, //是否为混合过关投注
+                isBetSuccess: 0, //是否投注成功0未投注,1投注成功,2投注失败,3投注失败提示重投
+                betResult: null, //投注成功结果
+                betParams: null,//投注参数(记录上次投注参数用于重新投注)
+                betErrormsg: "", //投注失败原因
+            }
+        },
+        components: { //模组
+            guessheader: w.component.guessheader,
+            timeitem: w.component.timeitem,
+            leagueitem: w.component.leagueitem,
+            matchitem: w.component.matchitem,
+            live: w.component.live,
+            mix: w.component.mix,
+
+            loading: w.component.loading,
+            betpane: w.component.betpane,
+            betsuccess: w.component.betsuccess,
+            betfail: w.component.betfail
+        },
+        mounted: function () { //初始化
+            this.ComputedHeight();
+        },
+        methods: {
+            //变更体育类型
+            ChangeSport: function (sportId) {
+                this.isShowBet = false;
+                this.sportId = sportId;
+                this.$router.push({ name: "guess", params: { sportId: sportId } });
+            },
+            //变更显示类型
+            ChangeType: function (type) {
+                if (this.type == type) {
+                    return;
+                } else {
+                    this.isShowBet = false;
+                    this.type = type;
+                    this.$router.push({ name: "guess", params: { type: type } });
+                    this.$nextTick(function () {
+                        this.ComputedHeight();
+                    });
+                }
+            },
+            //按时间中选择具体时间
+            ChangeTime: function (matchlist) {
+                if (this.matchlist == matchlist) {
+                    return;
+                }
+                this.matchlist = matchlist;
+            },
+            //按联赛中选择具体联赛
+            ChangeLeague: function (matchlist) {
+                if (this.matchlist == matchlist) {
+                    return;
+                }
+                this.matchlist = matchlist;
+            },
+            //比赛列表中进入具体比赛
+            SelectMatch: function (matchId) {
+                this.$router.push({
+                    name: 'match',
+                    params: {
+                        "matchId": matchId
+                    }
+                });
+            },
+            //计算guess高度
+            ComputedHeight: function () {
+                var ele = document.getElementById('time');
+                var elel = document.getElementById('league');
+                var elei = document.getElementById('matchitem');
+                var headerHeight = document.getElementById('header').offsetHeight;
+                if (ele) {
+                    ele.style.height = (window.innerHeight - headerHeight) + "px";
+                }
+                if (elel) {
+                    elel.style.height = (window.innerHeight - headerHeight) + "px";
+                }
+                if (elei) {
+                    elei.style.height = (window.innerHeight - headerHeight) + "px";
+                }
+            },
+            //一般投注
+            InitBet: function (type, parma) {
+                this.isMix = type;
+                var gu = this;
+                this.ShowLoading(w.Language.LoadingText.LoadGetBet);
+                if (this.isMix) {
+                    w.Api.GetMixBet(parma, function (data) {
+                        gu.isLoading = false;
+                        switch (data.RequestBetError) {
+                            case w.$config.RequestBetError.Success:
+                            case w.$config.RequestBetError.OddChange:
+                            case w.$config.RequestBetError.OutLeveChanged:
+                                if (data.Data) {
+                                    gu.betinfo = data.Data;
+                                    gu.isShowBet = true;
+                                }
+                                break;
+                            case w.$config.RequestBetError.TicketError:
+                            case w.$config.RequestBetError.LimitError:
+                            case w.$config.RequestBetError.SystemError:
+                            case w.$config.RequestBetError.OverLimit:
+                            case w.$config.RequestBetError.MixParamNotFind:
+                            case w.$config.RequestBetError.NeedLogin:
+                                gu.$refs.mix.GetMixBetError(); //清空投注列表
+                                console.log("获取投注失败:" + data.ErrorMsg);
+                                break;
+
+                        }
+                    }, function (err) {
+                        gu.isLoading = false;
+                        console.log("err=" + err.Message);//提示错误
+                    })
+                } else {
+                    w.Api.GetBet(parma, function (data) {
+                        gu.isLoading = false;
+                        switch (data.RequestBetError) {
+                            case w.$config.RequestBetError.Success:
+                            case w.$config.RequestBetError.OddChange:
+                            case w.$config.RequestBetError.OutLeveChanged:
+                                if (data.Data) {
+                                    gu.betinfo = data.Data;
+                                    gu.isShowBet = true;
+                                }
+                                break;
+                            case w.$config.RequestBetError.TicketError:
+                            case w.$config.RequestBetError.LimitError:
+                            case w.$config.RequestBetError.SystemError:
+                            case w.$config.RequestBetError.OverLimit:
+                            case w.$config.RequestBetError.MixParamNotFind:
+                            case w.$config.RequestBetError.NeedLogin:
+                                console.log("获取投注失败:" + data.ErrorMsg);
+                                break;
+                        }
+                    }, function (err) {
+                        gu.isLoading = false;
+                        console.log("获取投注错误:" + err.Message);//提示错误
+                    })
+                }
+            },
+            //提交投注 混合过关 滚球
+            SubmitBet: function (params) {
+                this.betParams = params;
+                this.isShowBet = false;
+                //显示loading;
+                this.ShowLoading(w.Language.LoadingText.LoadBet);
+                var gu = this;
+                if (gu.isMix) { //混合投注;
+                    w.Api.BetMix(params, function (data) {
+                        gu.isLoading = false;
+                        gu.selectBetitem = "";
+                        if (data.BetResult === 0) {
+
+                            gu.isBetSuccess = 1;
+                            gu.betResult = data.Data;
+                            gu.betParams = null;
+                            w.vbus.$emit("MixBetSuccess");
+
+                        } else {
+                            //操作失败
+                            console.log(data);
+                            switch (data.BetResult) {
+                                //暂无继续投注功能
+                                //case w.$config.BetResultEnum.HdpChanged:
+                                //case w.$config.BetResultEnum.OddsChanged:
+                                //    //提示是否继续投注
+                                //    if (gu.betParams && gu.betParams.hasOwnProperty("MixInfo")) {
+                                //        var arr = JSON.parse(gu.betParams.MixInfo);
+                                //        for (var i = 0; i < arr.length; i++) {
+                                //            arr[i].Odds = data.Data.MixBets[arr[i].CouID].NewOdds;
+                                //            arr[i].BetHdp = data.Data.MixBets[arr[i].CouID].BetHdp;
+                                //        }
+                                //        gu.betParams.MixInfo = JSON.stringify(arr);
+                                //    }
+                                //    gu.isBetSuccess = 3;
+                                //    gu.betErrormsg = data.ErrorMsg;
+                                //    break;
+
+                                default:
+                                    gu.isBetSuccess = 2; //投注失败
+                                    gu.betErrormsg = data.ErrorMsg;
+                                    gu.betParams = null;
+                                    break;
+                            }
+                            w.vbus.$emit("MixBetFail");
+                        }
+                    }, function (err) {
+                        gu.selectBetitem = "";
+                        gu.isLoading = false;
+                        console.log("err=" + err.Message);//提示错误
+                    })
+                } else {
+                    w.Api.Bet(params, function (data) {
+
+                        gu.isLoading = false;
+                        gu.selectBetitem = "";
+                        if (data.BetResult === 0) {
+
+                            gu.isBetSuccess = 1;
+                            gu.betResult = data.Data;
+                            gu.betParams = null;
+
+                        } else {
+                            //操作失败
+                            console.log(data);
+                            switch (data.Data.Result) {
+                                //暂无继续投注功能
+                                //case w.$config.BetResultEnum.HdpChanged:
+                                //case w.$config.BetResultEnum.OddsChanged:
+                                //    //提示是否继续投注
+                                //    if (gu.betParams) {
+                                //        gu.betParams.Odds = data.Data.BetInfo.NewOdds;
+                                //        gu.betParams.BetHdp = data.Data.BetInfo.BetHdp;
+                                //    }
+                                //    gu.isBetSuccess = 3;
+                                //    gu.betErrormsg = data.ErrorMsg;
+                                //    break;
+
+                                default:
+                                    gu.isBetSuccess = 2; //投注失败
+                                    gu.betErrormsg = data.ErrorMsg;
+                                    gu.betParams = null;
+                                    break;
+                            }
+                        }
+                    }, function (err) {
+                        gu.selectBetitem = "";
+                        gu.isLoading = false;
+                        console.log("err=" + err.Message);//提示错误
+                    })
+                }
+
+            },
+            //重新投注
+            ReSubmitBet: function () {
+                this.CloseMessage();
+                this.SubmitBet(this.betParams);
+            },
+            //取消重投
+            CancelBet: function () {
+                this.CloseMessage();
+                this.betParams = null;
+            },
+            //关闭投注界面
+            CloseBetPane: function () {
+                //是否清除已选投注比赛
+                this.selectBetitem = "";
+                this.isShowBet = false;
+            },
+            //关闭提示框
+            CloseMessage: function () {
+                this.isBetSuccess = 0;
+            },
+            //显示加载动画
+            ShowLoading: function (text) {
+                this.isLoading = true;
+                this.loadingText = text;
+            },
+            //显示投注记录
+            ShowStatement: function () {
+                this.$router.push({
+                    name: "betlist"
+                });
+            },
+            //显示排行榜
+            ShowRanking: function () {
+                this.$router.push({
+                    name: "ranking"
+                });
+            }
+        }
+    })
+    return guess;
+});

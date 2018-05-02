@@ -1,0 +1,556 @@
+/*
+ * 后台Api接口
+ */
+(function (w, fun) {
+    if (typeof (fun) == "function") {
+        w.Api = fun(w);
+    }
+})(window, function (w) {
+    var Api = {
+        v: w.Vue,
+        options: {
+            baseUrl: 'http://sport.d1.natapp.cc/api/api/',
+            token: ""
+        },
+        Balance: 0,
+        //基础请求
+        BasePost: function (type, url, params, successfun, failfun) {
+            if (type == "get") {
+                var arr = [];
+                for (var key in params) {
+                    arr.push(key + "=" + params[key]);
+                }
+                var str = arr.join("&");
+                Api.v.http.get(Api.options.baseUrl + url + "?" + str, {
+                    headers: {
+                        Authorization: Api.options.token,
+                        QIC: "QIC"
+                    }
+                }).then(function (data) {
+                    if (data && data.hasOwnProperty("body")) {
+                        if (typeof (successfun) == "function") {
+                            successfun(data.body);
+                        }
+                    }
+                }, function (error) {
+                    if (typeof (failfun) == "function") {
+                        failfun(error);
+                    }
+                });
+            } else if (type == "post") {
+                Api.v.http.post(Api.options.baseUrl + url, params, {
+                    headers: {
+                        Authorization: Api.options.token,
+                        QIC: "QIC"
+                    }
+                }).then(function (data) {
+                    if (data && data.hasOwnProperty("body")) {
+                        if (typeof (successfun) == "function" && data.body) {
+                            successfun(data.body);
+                        }
+                    }
+                }, function (error) {
+                    if (typeof (failfun) == "function") {
+                        failfun(error);
+                    }
+                });
+            }
+        },
+        //api都需调用此方法
+        //验证Token是否存在，不存在则获取后请求(为分享单页)
+        Post: function (type, url, params, successfun, failfun) {
+            if (Api.options.token == "") {
+                Api.GetToken(function (token) {
+                    Api.options.token = token;
+                    Api.BasePost(type, url, params, successfun, failfun);
+                });
+            } else {
+                Api.BasePost(type, url, params, successfun, failfun);
+            }
+        },
+        //获取Token
+        GetToken: function (callback) {
+            var token = "";
+            try {
+                //嵌套模式下获取token
+                token = new window.CacheManagement().Get("Token");
+            } catch (e) {
+                token = "";
+                console.log("getToken error ", e);
+            }
+            if (!token && !window.$config.TestMode) {
+                console.log("获取Token失败");
+            }
+            //测试模式
+            if (window.$config.TestMode) {
+                token = "";
+            }
+            if (!!token && typeof (callback) == "function") {
+                callback(token);
+                return;
+            }
+            console.log("测试模式 使用固定openid生成Token");
+            //本地测试获取token
+            Api.v.http.get(Api.options.baseUrl + "generatetoken?openid=122&isTourist=false").then(function (data) {
+                if (typeof (callback) == "function") {
+                    callback(data.body);
+                }
+            },
+            function () {
+                if (typeof (callback) == "function") {
+                    callback("");
+                }
+            });
+        },
+        //获取余额
+        GetBalance: function (successfun, failfun) {
+            Api.Post("get", "getbalance", {}, function (d) {
+                if (d.Success) {
+                    successfun(d.Data);
+                } else {
+                    failfun(d);
+                }
+            }, failfun);
+        },
+        //竞猜
+        //获取按时间
+        GetOddsByTime: function (params, successfun, failfun) {
+            Api.Post("get", "getdatemenu", params, successfun, failfun);
+            /*if(typeof(callback) == "function") {
+				var data = [{
+						"RD": "03月10日",
+						"WK": "星期五",
+						"MList": [
+							{ "MID": 8888, "LN": "英超", "HN": "曼联", "AN": "切尔西", "MD": "3/24 17:30", "OL": true },
+							{ "MID": 8888, "LN": "英超", "HN": "曼联", "AN": "切尔西", "MD": "3/24 17:30", "OL": true }
+						]
+					},
+					{
+						"RD": "03月10日",
+						"WK": "星期五",
+						"MList": [{ "MID": 8888, "LN": "英超", "HN": "曼联", "AN": "切尔西", "MD": "3/24 17:30", "OL": true }]
+					}
+				];
+				callback(data);
+			}*/
+
+        },
+        //获取按联赛
+        GetOddsByLeague: function (params, successfun, failfun) {
+            Api.Post("get", "getleaguemenu", params, successfun, failfun)
+            /*if(typeof(callback) == "function") {
+				//测试数据
+				var data = [{
+						"LID": 10000,
+						"LN": "英超",
+						"MList": [{
+								"MID": 8888,
+								"LN": "英超",
+								"HN": "曼联",
+								"AN": "切尔西",
+								"MD": "3/24 17:30",
+								"OL": true
+							},
+							{
+								"MID": 8888,
+								"LN": "英超",
+								"HN": "曼联",
+								"AN": "切尔西",
+								"MD": "3/24 17:30",
+								"OL": true
+							}
+						]
+					},
+					{
+						"LID": 10001,
+						"LN": "中超",
+						"MList": [{
+							"MID": 8888,
+							"LN": "中超",
+							"HN": "国安",
+							"AN": "恒大",
+							"MD": "3/24 17:30",
+							"OL": true
+						}]
+					}
+				]
+				callback(data);
+			}*/
+        },
+        //获取滚球
+        GetOddsByLive: function (params, successfun, failfun) {
+            if (params) {
+                params["isMix"] = false;
+            }
+            Api.Post("get", "getweguessmatchodds", params, successfun, failfun);
+            /*if(typeof(callback) == "function") {
+				var data = {
+					"D": null,
+					"LG": {
+						"21977": { "LeagueID": 21977, "LS": 20686, "LN": "2018 世界杯大洋洲预选赛" }
+					},
+					"MH": [{
+						"MatchID": 1463699,
+						"M": [1463699, 1, 21977, 181191, "纽西兰", 200083, "斐济", "201703281435", 4, 3],
+						"MEXT": [11, false, true, false, false, 100],
+						"ML": [1, 45, 1, 0, 0, 0],
+						"MK": {
+							"1": [
+								["6286539352997893", "-0.91", "0.75", "-1.25"],
+								["6286539352997892", "0.70", "-0.86", "-1.0"],
+								["6286539352997894", "-0.72", "0.56", "-1.5"],
+								["6286539352997891", "0.49", "-0.65", "-0.75"]
+							],
+							"3": [
+								["6286539386519563", "0.96", "0.86", "2.75"],
+								["6286539386519562", "0.72", "-0.90", "2.5"],
+								["6286539386519564", "-0.75", "0.57", "3.0"],
+								["6286539386519561", "0.47", "-0.65", "2.25"]
+							]
+						}
+					}, {
+						"MatchID": 1463698,
+						"M": [1463699, 1, 21977, 181191, "纽西兰", 200083, "斐济", "201703281435", 4, 3],
+						"MEXT": [11, false, true, false, false, 100],
+						"ML": [1, 45, 1, 0, 0, 0],
+						"MK": {
+							"1": [
+								["6286539352997893", "-0.91", "0.75", "-1.25"],
+								["6286539352997892", "0.70", "-0.86", "-1.0"],
+								["6286539352997894", "-0.72", "0.56", "-1.5"],
+								["6286539352997891", "0.49", "-0.65", "-0.75"]
+							],
+							"3": [
+								["6286539386519563", "0.96", "0.86", "2.75"],
+								["6286539386519562", "0.72", "-0.90", "2.5"],
+								["6286539386519564", "-0.75", "0.57", "3.0"],
+								["6286539386519561", "0.47", "-0.65", "2.25"]
+							],
+							"5": [
+								["6286539386519563", "0.96", "0.86", "1.92"],
+								["6286539386519562", "0.72", "-0.90", "1.92"],
+								["6286539386519564", "-0.75", "0.57", "1.92"],
+								["6286539386519561", "0.47", "-0.65", "1.92"]
+							]
+						}
+					}],
+					"T": "2017-03-28 15:23:22"
+				};
+				callback(data);
+			}*/
+        },
+        //获取混合过关
+        GetOddsByMix: function (params, successfun, failfun) {
+            if (params) {
+                params["isMix"] = true;
+            }
+            Api.Post("get", "getweguessmatchodds", params, successfun, failfun);
+            /*if(typeof(callback) == "function") {
+				var data = {
+					"D": null,
+					"LG": {
+						"21977": { "LeagueID": 21977, "LS": 20686, "LN": "2018 世界杯大洋洲预选赛" }
+					},
+					"MH": [{
+						"MatchID": 1463699,
+						"M": [1463699, 1, 21977, 181191, "纽西兰", 200083, "斐济", "201703281435", 4, 3],
+						"MEXT": [11, false, true, false, false, 100],
+						"ML": [1, 45, 1, 0, 0, 0],
+						"MK": {
+							"1": [
+								["6286539352997893", "-0.91", "0.75", "-1.25"],
+								["6286539352997892", "0.70", "-0.86", "-1.0"],
+								["6286539352997894", "-0.72", "0.56", "-1.5"],
+								["6286539352997891", "0.49", "-0.65", "-0.75"]
+							],
+							"3": [
+								["6286539386519563", "0.96", "0.86", "2.75"],
+								["6286539386519562", "0.72", "-0.90", "2.5"],
+								["6286539386519564", "-0.75", "0.57", "3.0"],
+								["6286539386519561", "0.47", "-0.65", "2.25"]
+							]
+						}
+					},{
+						"MatchID": 1463698,
+						"M": [1463699, 1, 21977, 181191, "纽西兰", 200083, "斐济", "201703281435", 4, 3],
+						"MEXT": [11, false, true, false, false, 100],
+						"ML": [1, 45, 1, 0, 0, 0],
+						"MK": {
+							"1": [
+								["6286539352997893", "-0.91", "0.75", "-1.25"],
+								["6286539352997892", "0.70", "-0.86", "-1.0"],
+								["6286539352997894", "-0.72", "0.56", "-1.5"],
+								["6286539352997891", "0.49", "-0.65", "-0.75"]
+							],
+							"3": [
+								["6286539386519563", "0.96", "0.86", "2.75"],
+								["6286539386519562", "0.72", "-0.90", "2.5"],
+								["6286539386519564", "-0.75", "0.57", "3.0"],
+								["6286539386519561", "0.47", "-0.65", "2.25"]
+							]
+						}
+					},{
+						"MatchID": 1463697,
+						"M": [1463699, 1, 21977, 181191, "纽西兰", 200083, "斐济", "201703281435", 4, 3],
+						"MEXT": [11, false, true, false, false, 100],
+						"ML": [1, 45, 1, 0, 0, 0],
+						"MK": {
+							"1": [
+								["6286539352997893", "-0.91", "0.75", "-1.25"],
+								["6286539352997892", "0.70", "-0.86", "-1.0"],
+								["6286539352997894", "-0.72", "0.56", "-1.5"],
+								["6286539352997891", "0.49", "-0.65", "-0.75"]
+							],
+							"3": [
+								["6286539386519563", "0.96", "0.86", "2.75"],
+								["6286539386519562", "0.72", "-0.90", "2.5"],
+								["6286539386519564", "-0.75", "0.57", "3.0"],
+								["6286539386519561", "0.47", "-0.65", "2.25"]
+							]
+						}
+					},{
+						"MatchID": 1463696,
+						"M": [1463699, 1, 21977, 181191, "纽西兰", 200083, "斐济", "201703281435", 4, 3],
+						"MEXT": [11, false, true, false, false, 100],
+						"ML": [1, 45, 1, 0, 0, 0],
+						"MK": {
+							"1": [
+								["6286539352997893", "-0.91", "0.75", "-1.25"],
+								["6286539352997892", "0.70", "-0.86", "-1.0"],
+								["6286539352997894", "-0.72", "0.56", "-1.5"],
+								["6286539352997891", "0.49", "-0.65", "-0.75"]
+							],
+							"3": [
+								["6286539386519563", "0.96", "0.86", "2.75"],
+								["6286539386519562", "0.72", "-0.90", "2.5"],
+								["6286539386519564", "-0.75", "0.57", "3.0"],
+								["6286539386519561", "0.47", "-0.65", "2.25"]
+							]
+						}
+					},{
+						"MatchID": 1463695,
+						"M": [1463699, 1, 21977, 181191, "纽西兰", 200083, "斐济", "201703281435", 4, 3],
+						"MEXT": [11, false, true, false, false, 100],
+						"ML": [1, 45, 1, 0, 0, 0],
+						"MK": {
+							"1": [
+								["6286539352997893", "-0.91", "0.75", "-1.25"],
+								["6286539352997892", "0.70", "-0.86", "-1.0"],
+								["6286539352997894", "-0.72", "0.56", "-1.5"],
+								["6286539352997891", "0.49", "-0.65", "-0.75"]
+							],
+							"3": [
+								["6286539386519563", "0.96", "0.86", "2.75"],
+								["6286539386519562", "0.72", "-0.90", "2.5"],
+								["6286539386519564", "-0.75", "0.57", "3.0"],
+								["6286539386519561", "0.47", "-0.65", "2.25"]
+							]
+						}
+					},{
+						"MatchID": 1463694,
+						"M": [1463699, 1, 21977, 181191, "纽西兰", 200083, "斐济", "201703281435", 4, 3],
+						"MEXT": [11, false, true, false, false, 100],
+						"ML": [1, 45, 1, 0, 0, 0],
+						"MK": {
+							"1": [
+								["6286539352997893", "-0.91", "0.75", "-1.25"],
+								["6286539352997892", "0.70", "-0.86", "-1.0"],
+								["6286539352997894", "-0.72", "0.56", "-1.5"],
+								["6286539352997891", "0.49", "-0.65", "-0.75"]
+							],
+							"3": [
+								["6286539386519563", "0.96", "0.86", "2.75"],
+								["6286539386519562", "0.72", "-0.90", "2.5"],
+								["6286539386519564", "-0.75", "0.57", "3.0"],
+								["6286539386519561", "0.47", "-0.65", "2.25"]
+							]
+						}
+					}],
+					"T": "2017-03-28 15:23:22"
+				};
+				callback(data);
+			}*/
+        },
+        //获取详细比赛
+        GetMatchOdd: function (params, successfun, failfun) {
+            Api.Post("get", "getmatchdata", params, successfun, failfun);
+            /*if(typeof(callback) == "function") {
+				var data = {
+					Data: {
+						"SID": 1,
+						"LID": 20598,
+						"LN": "英超",
+						"HN": "曼联",
+						"AN": "切尔西",
+						"MD": "3/24 17:30",
+						"Stage": 3,
+						"OL": true,
+						"HS": 0,
+						"AS": 0,
+						"HC": 0,
+						"AC": 0,
+						"PH": 1,
+						"LT": 45,
+						"MK": {
+							"1": [
+								["6277004525600775", "0.94", "0.98", "-1.75"],
+								["6277004525600776", "-0.81", "0.73", "-2.0"],
+								["6277004525600774", "0.72", "-0.80", "-1.5"],
+								["6277004525600777", "-0.65", "0.57", "-2.25"]
+							],
+							"2": [
+								["6277004542377987", "0.95", "0.93", "+0.75"],
+								["6277004542377986", "0.69", "-0.81", "-0.5"]
+							],
+							"3": [
+								["6277004559122443", "-0.96", "0.86", "2.75"],
+								["6277004559122442", "0.84", "-0.94", "2.5"],
+								["6277004559122444", "-0.72", "0.62", "3.0"],
+								["6277004559122441", "0.62", "-0.72", "2.25"]
+							],
+							"4": [
+								["6277004575899652", "0.78", "-0.90", "1.0"],
+								["6277004575899653", "-0.81", "0.69", "1.25"]
+							],
+							"5": [
+								["6277004592676864", "1.16", "16.52", "6.08"]
+							],
+							"6": [
+								["6277004609454080", "1.59", "12.63", "2.49"]
+							],
+							"9": [
+								["6277004609454080", "1.59", "12.63", "2.49", "1.59", "12.63", "2.49", "1.59", "12.63", "2.49", "1.59", "12.63", "2.49", "1.59", "12.63", "2.49", "1.59", "12.63", "2.49", "1.59", "12.63", "2.49", "1.59", "12.63", "2.49", "1.59", "12.63", "2.49"]
+							],
+							"11": [
+								["6277004609454080", "1.59", "12.63", "2.49", "1.59", "12.63", "2.49"]
+							],
+							"M31": [
+								["6277005028917256", "0.96", "0.96", "-2.0", "0.0"]
+							],
+							"M32": [
+								["6277005045661708", "0.95", "0.95", "3.0", "0.0"]
+							],
+							"M33": [
+								["6277005062471684", "0.94", "0.94", "-1.0", "0.0"]
+							],
+							"M34": [
+								["6277005079216132", "0.94", "0.94", "1.0", "0.0"]
+							]
+						}
+					}
+				};
+				callback(data);
+			}*/
+        },
+        //获取一般投注
+        GetBet: function (params, successfun, failfun) {
+            Api.Post("get", "getbet", params, successfun, failfun);
+            /*if(typeof(callback) == "function") {
+				var data = {
+					"Limit": { "MinBet": 5, "MaxBet": 100 },
+					"Ticket": { "CouID": 6277726080106503,
+					"OrID": 0, 
+					"MatchID": 1461647,
+					"MarketID": 1,
+					"Hdp": -1.75,
+					"BetHdp": "-1.75", 
+					"OutLevel": 0, 
+					"OddsStyle": 0, 
+					"BetTeam": "澳洲", 
+					"BetKind": "亚洲盘",
+					"BetPos": 1, 
+					"OldOdds": 2.28, 
+					"NewOdds": 2.29,
+					"LeagueName": "2018 世界杯亚洲预选赛", 
+					"HomeName": "澳洲", 
+					"AwayName": "阿联酋",
+					"SportID": 1, 
+					"SportName": "足球", 
+					"Stage": 2, 
+					"HomeScore": 0, 
+					"AwayScore": 0, "BetScore": "0:0", "ReportDate": "2017-03-28T00:00:00" }
+				}
+				callback(data);
+			}*/
+        },
+        //获取混合过关投注
+        GetMixBet: function (params, successfun, failfun) {
+            Api.Post("get", "getmixbet", params, successfun, failfun);
+            /*if(typeof(callback) == "function") {
+				var data = { "Limit": { "MinBet": 5, "MaxBet": 100 },
+				"TicketList": [{ "CouID": 6277726080106503, "OrID": 0, "MatchID": 1461647, "MarketID": 1, "Hdp": -1.75, "BetHdp": "-1.75", "OutLevel": 0, "OddsStyle": 0, "BetTeam": "澳洲", "BetKind": "亚洲盘", "BetPos": 1, "OldOdds": 2.28, "NewOdds": 2.28, "LeagueName": "2018 世界杯亚洲预选赛", "HomeName": "澳洲", "AwayName": "阿联酋", "SportID": 1, "SportName": "足球", "Stage": 2, "HomeScore": 0, "AwayScore": 0, "BetScore": "0:0", "ReportDate": "2017-03-28T00:00:00" }, { "CouID": 6277730375073804, "OrID": 0, "MatchID": 1461648, "MarketID": 1, "Hdp": -3, "BetHdp": "-3", "OutLevel": 0, "OddsStyle": 0, "BetTeam": "日本", "BetKind": "亚洲盘", "BetPos": 1, "OldOdds": 1.92, "NewOdds": 1.92, "LeagueName": "2018 世界杯亚洲预选赛", "HomeName": "日本", "AwayName": "泰国", "SportID": 1, "SportName": "足球", "Stage": 2, "HomeScore": 0, "AwayScore": 0, "BetScore": "0:0", "ReportDate": "2017-03-28T00:00:00" }, { "CouID": 6277738965008390, "OrID": 0, "MatchID": 1461650, "MarketID": 1, "Hdp": -1.5, "BetHdp": "-1.5", "OutLevel": 0, "OddsStyle": 0, "BetTeam": "南韩", "BetKind": "亚洲盘", "BetPos": 1, "OldOdds": 1.94, "NewOdds": 1.94, "LeagueName": "2018 世界杯亚洲预选赛", "HomeName": "南韩", "AwayName": "叙利亚", "SportID": 1, "SportName": "足球", "Stage": 2, "HomeScore": 0, "AwayScore": 0, "BetScore": "0:0", "ReportDate": "2017-03-28T00:00:00" }], "MixTotalOdds": 8.492544 };
+				callback(data);
+			}*/
+        },
+        //一般投注
+        Bet: function (params, successfun, failfun) {
+            Api.Post("post", "bet", params, successfun, failfun);
+            /*if(typeof(callback) == "function") {
+				var data = {}; //{ "Limit": { "MinBet": 5, "MaxBet": 100 }, "TicketList": [{ "CouID": 6277726080106503, "OrID": 0, "MatchID": 1461647, "MarketID": 1, "Hdp": -1.75, "BetHdp": "-1.75", "OutLevel": 0, "OddsStyle": 0, "BetTeam": "澳洲", "BetKind": "亚洲盘", "BetPos": 1, "OldOdds": 2.28, "NewOdds": 2.28, "LeagueName": "2018 世界杯亚洲预选赛", "HomeName": "澳洲", "AwayName": "阿联酋", "SportID": 1, "SportName": "足球", "Stage": 2, "HomeScore": 0, "AwayScore": 0, "BetScore": "0:0", "ReportDate": "2017-03-28T00:00:00" }, { "CouID": 6277730375073804, "OrID": 0, "MatchID": 1461648, "MarketID": 1, "Hdp": -3, "BetHdp": "-3", "OutLevel": 0, "OddsStyle": 0, "BetTeam": "日本", "BetKind": "亚洲盘", "BetPos": 1, "OldOdds": 1.92, "NewOdds": 1.92, "LeagueName": "2018 世界杯亚洲预选赛", "HomeName": "日本", "AwayName": "泰国", "SportID": 1, "SportName": "足球", "Stage": 2, "HomeScore": 0, "AwayScore": 0, "BetScore": "0:0", "ReportDate": "2017-03-28T00:00:00" }, { "CouID": 6277738965008390, "OrID": 0, "MatchID": 1461650, "MarketID": 1, "Hdp": -1.5, "BetHdp": "-1.5", "OutLevel": 0, "OddsStyle": 0, "BetTeam": "南韩", "BetKind": "亚洲盘", "BetPos": 1, "OldOdds": 1.94, "NewOdds": 1.94, "LeagueName": "2018 世界杯亚洲预选赛", "HomeName": "南韩", "AwayName": "叙利亚", "SportID": 1, "SportName": "足球", "Stage": 2, "HomeScore": 0, "AwayScore": 0, "BetScore": "0:0", "ReportDate": "2017-03-28T00:00:00" }], "MixTotalOdds": 8.492544 };
+				callback(data);
+			}*/
+        },
+        //混合过关投注
+        BetMix: function (params, successfun, failfun) {
+            Api.Post("post", "mixbet", params, successfun, failfun);
+            /*if(typeof(callback) == "function") {
+				var data = {} //{ "Limit": { "MinBet": 5, "MaxBet": 100 }, "TicketList": [{ "CouID": 6277726080106503, "OrID": 0, "MatchID": 1461647, "MarketID": 1, "Hdp": -1.75, "BetHdp": "-1.75", "OutLevel": 0, "OddsStyle": 0, "BetTeam": "澳洲", "BetKind": "亚洲盘", "BetPos": 1, "OldOdds": 2.28, "NewOdds": 2.28, "LeagueName": "2018 世界杯亚洲预选赛", "HomeName": "澳洲", "AwayName": "阿联酋", "SportID": 1, "SportName": "足球", "Stage": 2, "HomeScore": 0, "AwayScore": 0, "BetScore": "0:0", "ReportDate": "2017-03-28T00:00:00" }, { "CouID": 6277730375073804, "OrID": 0, "MatchID": 1461648, "MarketID": 1, "Hdp": -3, "BetHdp": "-3", "OutLevel": 0, "OddsStyle": 0, "BetTeam": "日本", "BetKind": "亚洲盘", "BetPos": 1, "OldOdds": 1.92, "NewOdds": 1.92, "LeagueName": "2018 世界杯亚洲预选赛", "HomeName": "日本", "AwayName": "泰国", "SportID": 1, "SportName": "足球", "Stage": 2, "HomeScore": 0, "AwayScore": 0, "BetScore": "0:0", "ReportDate": "2017-03-28T00:00:00" }, { "CouID": 6277738965008390, "OrID": 0, "MatchID": 1461650, "MarketID": 1, "Hdp": -1.5, "BetHdp": "-1.5", "OutLevel": 0, "OddsStyle": 0, "BetTeam": "南韩", "BetKind": "亚洲盘", "BetPos": 1, "OldOdds": 1.94, "NewOdds": 1.94, "LeagueName": "2018 世界杯亚洲预选赛", "HomeName": "南韩", "AwayName": "叙利亚", "SportID": 1, "SportName": "足球", "Stage": 2, "HomeScore": 0, "AwayScore": 0, "BetScore": "0:0", "ReportDate": "2017-03-28T00:00:00" }], "MixTotalOdds": 8.492544 };
+				callback(data);
+			}*/
+        },
+        //赛事
+        //即时数据
+        GetTimeLeague: function (params, successfun, failfun) {
+            Api.Post("get", "getmatchlivedata", params, successfun, failfun);
+            /*if(typeof(callback) == "function") {
+				var data = [{ "MID": 8888, "LN": "英超", "HN": "曼联", "AN": "切尔西", "HS": 0, "AS": 1, "HC": 0, "AC": 0, "PH": 1, "LT": 20 },
+					{ "MID": 8888, "LN": "英超", "HN": "曼联", "AN": "切尔西", "HS": 0, "AS": 1, "HC": 0, "AC": 0, "PH": 2, "LT": 30 },
+					{ "MID": 8888, "LN": "英超", "HN": "曼联", "AN": "切尔西", "HS": 0, "AS": 1, "HC": 0, "AC": 0, "PH": 2, "LT": 30 },
+					{ "MID": 8888, "LN": "英超", "HN": "曼联", "AN": "切尔西", "HS": 0, "AS": 1, "HC": 0, "AC": 0, "PH": 2, "LT": 30 },
+					{ "MID": 8888, "LN": "英超", "HN": "曼联", "AN": "切尔西", "HS": 0, "AS": 1, "HC": 0, "AC": 0, "PH": 2, "LT": 30 },
+					{ "MID": 8888, "LN": "英超", "HN": "曼联", "AN": "切尔西", "HS": 0, "AS": 1, "HC": 0, "AC": 0, "PH": 2, "LT": 30 },
+					{ "MID": 8888, "LN": "英超", "HN": "曼联", "AN": "切尔西", "HS": 0, "AS": 1, "HC": 0, "AC": 0, "PH": 2, "LT": 30 },
+					{ "MID": 8888, "LN": "英超", "HN": "曼联", "AN": "切尔西", "HS": 0, "AS": 1, "HC": 0, "AC": 0, "PH": 2, "LT": 30 },
+					{ "MID": 8888, "LN": "英超", "HN": "曼联", "AN": "切尔西", "HS": 0, "AS": 1, "HC": 0, "AC": 0, "PH": 2, "LT": 30 },
+					{ "MID": 8888, "LN": "英超", "HN": "曼联", "AN": "切尔西", "HS": 0, "AS": 1, "HC": 0, "AC": 0, "PH": 2, "LT": 30 }
+				];
+				callback(data);
+			}*/
+        },
+        //赛果数据
+        GetResultLeague: function (params, successfun, failfun) {
+            Api.Post("get", "getmatchresult", params, successfun, failfun);
+            /*if(typeof(callback) == "function") {
+				var data = [{ "MID": 8888, "LN": "英超", "HN": "曼联", "AN": "切尔西", "HS_F": 0, "AS_F": 1, "HS_H": 0, "AS_H": 0, "MD": "3/24 17:00", "HC": 3, "AC": 1 },
+					{ "MID": 8888, "LN": "英超", "HN": "曼联", "AN": "切尔西", "HS_F": 0, "AS_F": 1, "HS_H": 0, "AS_H": 0, "MD": "3/24 17:00", "HC": 3, "AC": 1 }
+				];
+				callback(data);
+			}*/
+        },
+        //赛程数据
+        GetProcessLeague: function (params, successfun, failfun) {
+            Api.Post("get", "getmatchschedule", params, successfun, failfun);
+            /*if(typeof(callback) == "function") {
+				var data = [{ "MID": 8888, "LN": "英超", "HN": "曼联", "AN": "切尔西", "MD": "3/24 17:00" },
+					{ "MID": 8888, "LN": "英超", "HN": "曼联", "AN": "切尔西", "MD": "3/24 17:00" }
+				];
+				callback(data);
+			}*/
+        },
+        //未结算注单列表
+        GetUnbalancedBets: function (successCallBack, failCallBack) {
+            Api.Post("get", "getunbalancedbetlist", {}, successCallBack, failCallBack);
+        },
+        //结算注单日期列表
+        GetBalancedBetDate: function (successCallBack, failCallBack) {
+            Api.Post("get", "getbalancedbetdate", {}, successCallBack, failCallBack);
+        },
+        //结算注单
+        GetBalancedBets: function (repDate, successCallBack, failCallBack) {
+            Api.Post("get", "getbalancedbetlist", { repDate: repDate }, successCallBack, failCallBack);
+        }
+
+
+    }
+    return Api;
+});

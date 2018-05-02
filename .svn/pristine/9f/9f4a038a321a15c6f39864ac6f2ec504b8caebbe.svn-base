@@ -1,0 +1,150 @@
+/*
+ * 投注记录
+ */
+(function (w, fun) {
+    if (w.component == null) {
+        w.component = {};
+    }
+    w.component['betlist'] = fun(w);
+})(window, function (w) {
+    var listhtml = '<div>\
+                    <div class="betlist-tabs">\
+                    <span @click="showbalanced=false" :class="{\'tab\':true,\'tabselected\':!showbalanced}"><span class="tab_text">未结算</span></span>\
+                    <span @click="showbalanced=true;showdatelist=true" :class="{\'tab\':true,\'tabselected\':showbalanced}"><span class="tab_text">已结算</span></span>\
+                    </div>\
+                <div  v-show="(!showbalanced)||(showbalanced&&!showdatelist)" class="betlist">\
+                <div class="betlistpane"  v-for="(item,index) in betlists" >\
+    	            <div class="listinfo">\
+						<div class="leftdiv">\
+						<span class="block textindent span1"><span class="betid">ID:{{item.BetID}}</span><span class="floatright block span2">{{item.BetDate}}</span></span>\
+                        <div class="subbets">\
+                        <div v-for="subbet in item.Items" class="subbet-item">\
+						    <div class="subbet_pos"><span style="width:75%" :class="\'textCut inlineblock span3 blue \'+(subbet.Stage==3?\'livetext\':\' \')">{{subbet.Stage==3?"滚球":"赛前"}}.{{subbet.BetKind}}:{{subbet.BetTeam}} {{subbet.Score}}@{{subbet.Odds}}</span>\
+                            <span :style="\'float:right;display:inline-block;line-height: 1.8em;vertical-align: top;color:\'+GetColor(subbet.BetStatus)">{{subbet.BetStatus}}</span></div>\
+                            <div class="subbet_info">{{subbet.HomeName}} <span class="betlist_vs">{{GetBetScoreOrVS(subbet)}}</span> {{subbet.AwayName}}<span class="subbet_date">{{subbet.LeagueName}}@{{subbet.ReportDate}}</span></div>\
+                            <div class="subbet_line"></div>\
+                        </div>\
+                        </div>\
+                        <div class="bet_footer">\
+                            <span class="floatleft betv">投注:{{item.BetValue}}</span>\
+                            <span class="name inlineblock" style="margin:auto">{{item.MpName?item.MpName+"@"+item.BetOdds.toFixed(2):""}}</span>\
+                            <span class="backvalue floatright textCut">预计返还: {{(item.AllWin+item.AllLose).toFixed(0)}}</span>\
+						</div>\
+					</div>\
+				</div>\
+	            </div>\
+	            </div>\
+				<div v-if="showbalanced&&showdatelist" class="datelist">\
+                <div  class="datelistpane" v-for="(item,index) in datelist" >\
+                    <div   @click="GetBalancedBets(item.Date)"><span class="date_date">{{item.Date}}</span><span :class="\'date_count \'+(item.Count<0?\'count_minus\':\'count_plus\')">{{item.Count}}<span class="date_arrow">&nbsp;</span></span></div>\
+                </div>\
+                <div class="no-data-tips" v-show="datelist.length==0">暂无数据</div>\
+			  </div><loading v-show="isLoading" :message="\'加载中\'"></loading></div>';
+    var BetColor = {
+        "已接受": "rgb(17,96,162)",
+        "等待": "rgb(17,96,162)",
+        "拒绝": "rgb(51,51,51)",
+        "输": "rgb(178,0,2)",
+        "赢": "rgb(0,141,65)",
+        "输半": "rgb(178,0,2)",
+        "赢半": "rgb(0,141,65)",
+        "打和": "rgb(127,127,127)"
+    }
+    var list = Vue.extend({
+        template: listhtml,
+        name: "betlist",
+        data: function() {
+            return {
+                isLoading: true,
+                datelist: [],
+                reportDate: "",
+                showbalanced: false,
+                showdatelist: false,
+                betlists: []
+            }
+        },
+        components: {
+//模组
+            loading: w.component.loading,
+
+        },
+        watch: {
+            showbalanced: function(sb) {
+                if (sb) {
+                    this.GetBalancedBetDate();
+                } else {
+                    this.GetUnbalancedBets();
+                }
+            }
+        },
+        methods: {
+            GetBetScoreOrVS: function(subbet) {
+                if (subbet.Status !== 2) {
+                    return "vs";
+                }
+                if (subbet.IsHalfMarket) {
+                    return subbet.HalfScore;
+                }
+                return subbet.FullScore;
+            },
+            GetUnbalancedBets: function() {
+                var that = this;
+                that.betlists = [];
+                that.isLoading = true;
+                w.Api.GetUnbalancedBets(function(data) {
+                    that.isLoading = false;
+                    if (data.Success) {
+                        that.betlists = data.Data;
+                    } else {
+                        that.betlists = [];
+                    }
+                }, function() {
+                    that.isLoading = false;
+                    that.betlists = [];
+                });
+            },
+            GetBalancedBetDate: function() {
+                var that = this;
+                that.datelist = [];
+                that.isLoading = true;
+                this.showdatelist = true;
+                w.Api.GetBalancedBetDate(function(data) {
+                    that.isLoading = false;
+                    if (data.Success) {
+                        that.datelist = data.Data;
+                    } else {
+                        that.datelist = [];
+                    }
+                }, function() {
+                    that.isLoading = false;
+                    that.datelist = [];
+                });
+            },
+            GetBalancedBets: function(repDate) {
+                this.isLoading = true;
+                var that = this;
+                that.betlists = [];
+                that.showdatelist = false;
+                w.Api.GetBalancedBets(repDate, function(data) {
+                    that.isLoading = false;
+                    if (data.Success) {
+                        that.betlists = data.Data;
+                    } else {
+                        that.betlists = [];
+                    }
+                }, function() {
+                    that.betlists = [];
+                    that.isLoading = false;
+                });
+            },
+            GetColor: function(status) {
+                return BetColor[status] || "black";
+            }
+        },
+        created: function() {
+            this.GetUnbalancedBets();
+            vbus.$emit("SetTitle", "注单列表");
+        }
+    });
+    return list;
+});

@@ -1,0 +1,182 @@
+/*
+ * 投注记录
+ */
+(function (w, fun) {
+    if (w.component == null) {
+        w.component = {};
+    }
+    w.component['betlist'] = fun(w);
+})(window, function (w) {
+    var listhtml = '<div>\
+                    <div class="betlist-tabs">\
+                    <span @click="ShowPage(\'unbal\')" :class="{\'tab\':true,\'tabselected\':type==\'unbal\'}"><span class="tab_text">未结算</span></span>\
+                    <span @click="ShowPage(\'baldate\')" :class="{\'tab\':true,\'tabselected\':type!==\'unbal\'}"><span class="tab_text">已结算</span></span>\
+                    </div>\
+                <div  v-show="(type==\'balbets\'||type==\'unbal\')&&betlists.length>0" class="betlist">\
+                <div class="betlistpane"  v-for="(item,index) in betlists" >\
+    	            <div class="listinfo">\
+						<div class="leftdiv">\
+						<span class="block textindent span1"><span class="betid">ID:{{item.BetID}}</span><span class="floatright block span2">{{item.BetDate}}</span></span>\
+                        <div class="subbets">\
+                        <div v-for="subbet in item.Items" class="subbet-item">\
+						    <div class="subbet_pos"><span style="width:75%" :class="\'textCut inlineblock span3 blue \'+(subbet.Stage==3?\'livetext\':\' \')">{{subbet.Stage==3?"滚球":"赛前"}}.{{subbet.BetKind}}:{{subbet.BetTeam}} {{ShowHdp(subbet.HDP,subbet.BetPos,subbet.MarketID)}}{{subbet.Score}}@{{subbet.Odds}}</span>\
+                            <span :style="\'float:right;display:inline-block;line-height: 1.8em;vertical-align: top;color:\'+GetColor(subbet.BetStatus)">{{subbet.BetStatus}}</span></div>\
+                            <div class="subbet_info">{{subbet.HomeName}} <span class="betlist_vs">{{GetBetScoreOrVS(subbet)}}</span> {{subbet.AwayName}}<span class="subbet_date">{{subbet.LeagueName}}{{zwsp}}@​{{zwsp}}{{subbet.ReportDate}}</span></div>\
+                            <div class="subbet_line"></div>\
+                        </div>\
+                        </div>\
+                        <div class="bet_footer">\
+                            <span class="floatleft betv">投注猜豆:{{item.BetValue}}</span>\
+                            <span class="name inlineblock" style="margin:auto">{{item.MpName?item.MpName+"@"+item.BetOdds.toFixed(2):""}}</span>\
+                            <span class="backvalue floatright textCut">{{type=="unbal"?"预计返还":"返还"}}: {{parseInt(type=="unbal"?(item.AllWin+item.AllLose):item.BackValue)}}</span>\
+						</div>\
+					</div>\
+				</div>\
+	            </div>\
+	            </div>\
+				<div v-show="type==\'baldate\'&&datelist.length>0" class="datelist">\
+                <div  class="datelistpane" v-for="(item,index) in datelist" >\
+                    <div   @click="ShowPage(\'balbets\',item.Date)"><span class="date_date">{{item.Date}}</span><span :class="\'date_count \'+(item.Count<0?\'count_minus\':\'count_plus\')">{{item.Count}}<span class="date_arrow">&nbsp;</span></span></div>\
+                </div>\
+			  </div><div class="no-data-tips" v-show="nodata">暂无数据</div><loading v-show="isLoading" :message="\'加载中\'"></loading></div>';
+    var BetColor = {
+        "已接受": "rgb(17,96,162)",
+        "等待": "rgb(17,96,162)",
+        "拒绝": "rgb(51,51,51)",
+        "赢": "rgb(178,0,2)",
+        "输": "rgb(0,141,65)",
+        "赢半": "rgb(178,0,2)",
+        "输半": "rgb(0,141,65)",
+        "打和": "rgb(127,127,127)"
+    }
+    var list = Vue.extend({
+        template: listhtml,
+        name: "betlist",
+        data: function () {
+            var type = this.$route.params.type;
+            var date = this.$route.params.date;
+            return {
+                isLoading: true,
+                datelist: [],
+                reportDate: "",
+                //showbalanced: false,
+                //showdatelist: false,
+                betlists: [],
+                zwsp:String.fromCharCode(8203),//零宽度空格 用于分隔连在一起但实际并不是一个整体词的两个词
+                type: type,  // unbal baldate balbets
+                date: date
+            }
+        },
+        computed: {
+            nodata: function () {
+                return ((this.type == "unbal" || this.type == "balbet") && this.betlists.length == 0) || (this.type == "baldate" && this.datelist.length == 0);
+            }
+        },
+        components: {
+            //模组
+            loading: w.component.loading
+
+        },
+        created: function () {
+            this.ShowPage(this.type, this.date);
+            vbus.$emit("SetTitle", "注单列表");
+        },
+        watch: {
+            '$route': function (to, from) {
+                this.type = this.$route.params.type;
+                this.date = this.$route.params.date;
+            }
+        },
+        methods: {
+            ShowHdp: function (hdp, pos, market) {
+                return w.HandleData.showHDP(hdp, pos, market);
+            },
+            ShowPage: function (type, date) {
+                switch (type) {
+                    case "baldate":
+                        this.type = type;
+                        this.$router.push({ name: "betlist", params: { type: type, date: "0" } });
+                        this.GetBalancedBetDate();
+                        break;
+                    case "balbets":
+                        this.type = type;
+                        this.$router.push({ name: "betlist", params: { type: type, date: date.replace(/\//g, "-") } });
+                        this.GetBalancedBets(date);
+                        break;
+                    case "unbal":
+                    default:
+                        this.type = type;
+                        this.$router.push({ name: "betlist", params: { type: type, date: "0" } });
+                        this.GetUnbalancedBets();
+                }
+            },
+            GetBetScoreOrVS: function (subbet) {
+                if (subbet.Status !== 2) {
+                    return "vs";
+                }
+                if (subbet.IsHalfMarket) {
+                    return subbet.HalfScore;
+                }
+                return subbet.FullScore;
+            },
+            //未结算
+            GetUnbalancedBets: function () {
+                var that = this;
+                that.betlists = [];
+                that.isLoading = true;
+                w.Api.GetUnbalancedBets(function (data) {
+                    that.isLoading = false;
+                    if (data.Success) {
+                        that.betlists = data.Data;
+
+                    } else {
+                        that.betlists = [];
+                    }
+                }, function () {
+                    that.isLoading = false;
+                    that.betlists = [];
+                });
+            },
+            //已结算日期列表
+            GetBalancedBetDate: function () {
+                var that = this;
+                that.datelist = [];
+                that.isLoading = true;
+                w.Api.GetBalancedBetDate(function (data) {
+                    that.isLoading = false;
+                    if (data.Success) {
+                        that.datelist = data.Data;
+                    } else {
+                        that.datelist = [];
+                    }
+                }, function () {
+                    that.isLoading = false;
+                    that.datelist = [];
+                });
+            },
+            //已结算注单列表
+            GetBalancedBets: function (repDate) {
+                this.isLoading = true;
+                var that = this;
+                that.betlists = [];
+                that.showdatelist = false;
+                w.Api.GetBalancedBets(repDate, function (data) {
+                    that.isLoading = false;
+                    if (data.Success) {
+                        that.betlists = data.Data;
+                    } else {
+                        that.betlists = [];
+                    }
+                }, function () {
+                    that.betlists = [];
+                    that.isLoading = false;
+                });
+            },
+            GetColor: function (status) {
+                return BetColor[status] || "black";
+            }
+        }
+
+    });
+    return list;
+});

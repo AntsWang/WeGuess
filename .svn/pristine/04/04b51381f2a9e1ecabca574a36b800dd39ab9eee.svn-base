@@ -1,0 +1,21 @@
+(function (w, fun) {
+    if (w.component == null) {
+        w.component = {};
+    }
+    w.component['rule'] = fun(w);
+})(window, function (w) {
+    var html = '<div class="rule_cont xscroll">' +
+        '<iframe class="rule_iframe" src="context/rule/rule.html?_=201705151730"></iframe>' +
+        '</div>';
+    var rule = Vue.extend({
+        template: html,
+        methods: {
+            
+        },
+        mounted: function () { //初始化
+            document.body.style.height = "100%";
+            document.getElementById("sport").style.height = "100%";
+        }
+    });
+    return rule;
+});

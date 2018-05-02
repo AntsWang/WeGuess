@@ -1,0 +1,50 @@
+/*
+ * 消息提示
+ * 
+ */
+(function (w, fun) {
+    if (w.component == null) {
+        w.component = {};
+    }
+    w.component['notice'] = fun(w);
+})(window, function (w) {
+    var noticehtml = '<div @click="NoticeNotification()" notice id="notice" class="contain"></div>';
+    var notice = Vue.extend({
+        template: noticehtml,
+        name: "notice",
+        data: function () {
+            return {
+            }
+        },
+        components: {
+            
+        },
+        mounted: function () {
+            var notification = $Notification.getInstance({
+                Url: w.Api.options.NoticeUrl,	//服务器地址
+                Notice: "notice", 	//滚动元素ID，默认值"notice"
+                ScrollTime: 2000,	//滚动间隔时间，默认值 2秒
+                RefreshTime: 10000,	//定时请求服务器，获取最新数据间隔时间 ，默认值10秒
+                Lang:"ch,en,tw",		//显示语言，默认值"ch,en,tw"
+                Data:{				//页码和每页条数 ，不传参数默认为 第1页，每页10条
+                    pageIndex:1,
+                    pageSize:10
+                }
+            });
+
+           notification.start();
+
+       },
+        methods: {
+          NoticeNotification:function(){
+              if (window != top) {
+                   return top.NoticeNotification();
+                } else {
+					window.NoticeNotification();
+                }
+              
+          }
+        }
+    });
+    return notice;
+});

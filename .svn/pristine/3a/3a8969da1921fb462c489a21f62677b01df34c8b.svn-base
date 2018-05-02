@@ -1,0 +1,123 @@
+.betfail, .betfail .message, .betsuccess, .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+    .betfail .messagepane {
+        height: 13em;
+        width: 22em;
+        margin: auto;
+        border: solid 1px #CCCCCC;
+        background-color: #FFFFFF;
+        border-radius: 1em;
+        text-align: center;
+    }
+
+    .betfail .messagetitle, .betsuccess .messagetitle {
+        position: relative;
+        height: 35px;
+        border-bottom: solid 1px #cccccc;
+        background-color: #f7f7f7;
+        border-top-left-radius: 1em;
+        border-top-right-radius: 1em;
+    }
+
+        .betfail .messagetitle span, .betfail .messagebtn span, .betsuccess .messagetitle span {
+            line-height: 2.5em;
+            font-size: 1.2em;
+        }
+
+    .betfail .message {
+        margin-left: 4.5em;
+        height: 7em;
+        width: 13em;
+    }
+
+    .betfail .messagebtn a, .betsuccess .messagefooter {
+        height: 3em;
+    }
+
+        .betfail .messagebtn a:first-child:after {
+            content: "";
+            float: right;
+            height: 100%;
+            border-right: solid 1px #CCCCCC;
+        }
+
+    .betsuccess .successpane {
+        max-height: 22em;
+        width: 95%;
+        margin: auto;
+        border: solid 1px #CCCCCC;
+        background-color: #FFFFFF;
+        border-radius: 1em;
+        text-align: center;
+        /*position: fixed;*/
+        margin-top: 55%;
+    }
+
+.successpane .textindent {
+    text-indent: 12px;
+}
+
+.betsuccess .matchlist {
+    max-height: 16em;
+    text-align: left;
+    border-bottom: solid 1px #cccccc;
+    overflow-y: scroll;
+}
+
+.betsuccess .matchitem > span {
+    display: block;
+    line-height: 24px;
+}
+
+.betsuccess .matchitem .back {
+    font-weight: 500;
+}
+
+.betsuccess .messagefooter > span {
+    max-width: 50%;
+    line-height: 3em;
+}
+
+    .betsuccess .messagefooter > span:last-child {
+        margin-right: 1em;
+    }
+
+.leagueinfo {
+    text-align: right;
+    margin-top: -24px;
+    margin-right: 5px;
+}
+
+.loading_cont {
+    width: 120px;
+    height: 120px;
+}
+
+    .loading_cont .blue {
+        margin-top: -68px;
+    }
+
+.loading img {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    width: 80px;
+    padding: 17px;
+    margin-top: calc(50% - 55px);
+}
+
+
+
+
+.loading span {
+    display: block;
+    width: 6em;
+    margin: auto;
+    text-align: center;
+    font-size: 0.7em;
+}

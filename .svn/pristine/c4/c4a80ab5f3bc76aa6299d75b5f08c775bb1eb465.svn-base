@@ -1,0 +1,234 @@
+/*
+ * 使用方法：
+
+var notification = $Notification.getInstance({
+	Url: "http://m.weguess.cn/memberapi/api//WeChat/GetNotice",	//服务器地址
+  	Notice: "notice", 	//滚动元素ID，默认值"notice"
+  	ScrollTime: 2000,	//滚动间隔时间，默认值 2秒
+  	RefreshTime: 10000	//定时请求服务器，获取最新数据间隔时间 ，默认值10秒
+  	Lang:"ch,en,tw"		//显示语言，默认值"ch,en,tw"
+  	Data:{				//页码和每页条数 ，不传参数默认为 第1页，每页10条
+  		pageIndex:1,
+  		pageSize:4
+  	}
+});
+
+1.启动滚动
+notification.start();	
+
+2.获取分页数据
+var options={
+	pageIndex:1,
+  	pageSize:10
+}
+function callback(data){}
+
+notification.get(options,callback);	
+ */
+;
+(function(w) {
+	/* 封装ajax函数
+	 * @param {string}opt.type http连接的方式，包括POST和GET两种方式
+	 * @param {string}opt.url 发送请求的url
+	 * @param {boolean}opt.async 是否为异步请求，true为异步的，false为同步的
+	 * @param {object}opt.data 发送的参数，格式为对象类型
+	 * @param {function}opt.success ajax发送并接收成功调用的回调函数
+	 */
+	function ajax(opt) {
+		opt = opt || {};
+		opt.method = opt.method.toUpperCase() || 'POST';
+		opt.url = opt.url || '';
+		opt.async = opt.async || true;
+		opt.data = opt.data || null;
+		opt.success = opt.success || function() {};
+		var xmlHttp = null;
+		if(XMLHttpRequest) {
+			xmlHttp = new XMLHttpRequest();
+		} else {
+			xmlHttp = new ActiveXObject('Microsoft.XMLHTTP');
+		}
+		var params = [];
+		for(var key in opt.data) {
+			params.push(key + '=' + opt.data[key]);
+		}
+		var postData = params.join('&');
+		if(opt.method.toUpperCase() === 'POST') {
+			xmlHttp.open(opt.method, opt.url, opt.async);
+			xmlHttp.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded;charset=utf-8');
+			xmlHttp.setRequestHeader('Access-Control-Allow-Origin', '*');
+			xmlHttp.send(postData);
+		} else if(opt.method.toUpperCase() === 'GET') {
+			xmlHttp.open(opt.method, opt.url + '?' + postData, opt.async);
+			xmlHttp.send(null);
+		}
+		xmlHttp.onreadystatechange = function() {
+			if(xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+				var response = "";
+				try {
+					response = JSON.parse(xmlHttp.responseText);
+				} catch(e) {
+					response = xmlHttp.responseText;
+				}
+				opt.success(response);
+			}
+		};
+	}
+	var config = {
+		Url: "",
+		Notice: "notice",
+		ScrollTime: 2000,
+		RefreshTime: 10000,
+		Lang: "ch,en,tw",
+		Data: {}
+	}
+	//上次刷新时间
+	var LastRefreshTime = new Date().getTime();
+	//模板
+	var temp = "<li>{{0}}</li>";
+	// 动画参数
+	var AnimationConfig = {
+		ItemHeight: 0,
+		Count: 0,
+		Ele: null,
+		UlEle: null,
+		LastItem: "",
+		NewUl: null,
+		Start: false
+	};
+	var sto1;
+	var sto2;
+	var sto3;
+	var sto4;
+	var sto5;
+
+	function GetDataFromServices(params, callback) {
+		ajax({
+			method: 'Get',
+			url: config.Url,
+			data: params,
+			header: {
+				Token: "",
+				QIC: ""
+			},
+			success: function(response) {
+				if(typeof callback === "function") {
+					if(response && response.Data) {
+						callback(response.Data);
+					} else {
+						callback([]);
+					}
+				}
+			}
+		});
+	}
+
+	function Start() {
+		//2.创建元素，获取单项高度
+		AnimationConfig.Ele = document.getElementById(config.Notice);
+		if(!AnimationConfig.Ele) {
+			console.log("容器不存在");
+			return;
+		}
+		AnimationConfig.ItemHeight = AnimationConfig.Ele.offsetHeight;
+		var str = "<div class='img'></div><ul style='top:0px;'></ul>";
+		AnimationConfig.Ele.innerHTML = str;
+		AnimationConfig.UlEle = AnimationConfig.Ele.getElementsByTagName("ul").item(0);
+
+		//3.定时服务器获取数据,处理数据
+		AnimationConfig.Count = 0;
+		AnimationConfig.LastItem = "";
+		AnimationConfig.NewUl = null;
+		AnimationConfig.Start = false;
+		clearTimeout(sto1);
+		clearTimeout(sto2);
+		clearTimeout(sto3);
+		clearTimeout(sto4);
+		GetDataFromServices(config.Data, DealData);
+		sto1 = setTimeout(function() {
+			GetDataFromServices(config.Data, DealData);
+			setTimeout(arguments.callee, config.RefreshTime);
+		}, config.RefreshTime);
+
+	}
+
+	function DealData(data) {
+		//5.处理数据
+		var length = data.length;
+		var liList = [];
+		for(var i = 0; i < length; i++) {
+			for(var item in data[i].Contents) {
+				if(config.Lang.indexOf(item) > -1) {
+					var str = temp.replace(/\{\{0\}\}/g, data[i].Contents[item]);
+					liList.push(str);
+				}
+			}
+		}
+		if(!AnimationConfig.NewUl) {
+			AnimationConfig.UlEle.innerHTML = liList[liList.length - 1] + liList.join('');
+			AnimationConfig.Count = length;
+			AnimationConfig.Start = true;
+		} else {
+			AnimationConfig.Count = length + 1;
+		}
+		AnimationConfig.NewUl = AnimationConfig.LastItem + liList.join('');
+		AnimationConfig.LastItem = liList[liList.length - 1];
+		if(AnimationConfig.Start) {
+			AnimationConfig.Start = false;
+			//4.启动动画
+			StartAnimation();
+		}
+	}
+
+	function StartAnimation() {
+		AnimationConfig.UlEle.style.cssText = "top:" + -1 * AnimationConfig.ItemHeight + "px;transition-duration: 0s;transition-delay: 0s";
+		var count = 1;
+		sto2 = setTimeout(function() {
+			if(AnimationConfig.Count > 0) {
+				++count;
+				if(count < AnimationConfig.Count) {
+					AnimationConfig.UlEle.style.cssText = "top:" + count * -1 * AnimationConfig.ItemHeight + "px";
+				}
+				if(count == AnimationConfig.Count - 1) {
+					sto3 = setTimeout(function() {
+						AnimationConfig.UlEle.innerHTML = AnimationConfig.NewUl;
+						count = 0;
+						AnimationConfig.UlEle.style.cssText = "top:" + count * -1 * AnimationConfig.ItemHeight + "px;transition-duration: 0s;transition-delay: 0s";
+					}, config.ScrollTime - 300)
+				}
+				sto4 = setTimeout(arguments.callee, config.ScrollTime);
+			} else {
+				sto5 = setTimeout(arguments.callee, 100);
+			}
+		}, config.ScrollTime);
+	}
+
+	var announcement = (function() {
+		var instantiated;
+		return {
+			getInstance: function(option) {
+				if(!instantiated) {
+					instantiated = function() {};
+					//1.构造函数，初始化数据
+					if(option.Url) {
+						config.Url = option.Url
+					} else {
+						alert("缺少服务地址")
+						return;
+					}
+					config.Notice = option.Notice || config.Notice;
+					config.ScrollTime = option.ScrollTime || config.ScrollTime;
+					config.scrollHeight = option.scrollHeight || config.scrollHeight;
+					config.RefreshTime = option.RefreshTime || config.RefreshTime;
+					config.Lang = option.Lang || config.Lang;
+					config.Data = option.Data || config.Data;
+				}
+				return {
+					get: GetDataFromServices,
+					start: Start
+				};;
+			}
+		};
+	})();
+	w.$Notification = announcement;
+
+})(window);
